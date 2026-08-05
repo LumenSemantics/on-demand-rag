@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import httpx
 
-PROMPT = "다음 AI 논문 초록을 한국어 한 문장으로 핵심만 요약해줘. 군더더기 없이 한 줄로:\n\n"
+PROMPT = (
+    "다음은 AI 연구 논문 또는 기술 글의 내용이다. "
+    "핵심을 한국어 한 문장으로만 요약해라. "
+    "제목·고유명사·기술 용어는 원문 그대로 두고, 설명만 한국어로. "
+    "군더더기 없이 한 줄로:\n\n"
+)
 
 
 def summarize(text: str, provider: str, api_key: str, model: str) -> str:

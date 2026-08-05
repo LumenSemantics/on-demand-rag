@@ -64,7 +64,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="ARIP Stage 1 — Crawl & Notify")
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
-    parser.add_argument("--limit-summary", type=int, default=10, help="요약할 최대 항목 수")
+    parser.add_argument("--limit-summary", type=int, default=0, help="요약할 최대 항목 수 (0=전체 신규 항목)")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -83,8 +83,9 @@ def main() -> int:
 
     do_summary = (not args.no_summary) and bool(cfg.llm_provider) and bool(cfg.llm_api_key)
     if do_summary:
-        print(f"요약 중… (최대 {args.limit_summary}건, provider={cfg.llm_provider})")
-        for it in new_items[: args.limit_summary]:
+        targets = new_items if args.limit_summary <= 0 else new_items[: args.limit_summary]
+        print(f"요약 중… ({len(targets)}건, provider={cfg.llm_provider})")
+        for it in targets:
             if it.abstract:
                 it.summary = llm.summarize(it.abstract, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
 
