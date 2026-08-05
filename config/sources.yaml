@@ -45,3 +45,18 @@ rss:
   - name: The Sequence
     url: https://thesequence.substack.com/feed
     limit: 5
+  # 한국어 AI·테크 뉴스 (2026-08 기준 접속 확인)
+  - name: AI타임스
+    url: https://www.aitimes.com/rss/allArticle.xml
+    limit: 8
+  - name: AI 투데이
+    url: https://www.ai-today.kr/feed
+    limit: 8
+  # 블로터: AI 카테고리 피드가 없어 전체기사 피드를 받아 AI 키워드로만 걸러 씀.
+  # include는 이 소스에만 적용됨(전역 filter와 별개). 필터가 수집 뒤 적용되므로
+  # limit을 넉넉히 잡아 AI 기사가 충분히 남게 한다(최종 표시는 max_per_source가 제어).
+  - name: 블로터
+    url: https://cdn.bloter.net/rss/gns_allArticle.xml
+    limit: 30
+    include: [AI, 인공지능, LLM, GPT, 생성형, 챗봇, 머신러닝, 딥러닝, 오픈AI,
+              제미나이, 클로드, 엔비디아, 반도체, 로봇, 자율주행]

@@ -48,7 +48,14 @@ def collect_all(cfg: Config) -> tuple[list[Item], list[str]]:
         name = feed.get("name", "?")
         try:
             got = rss.collect(name, feed["url"], feed.get("limit", 15))
-            print(f"[rss:{name}] {len(got)}건")
+            # 소스별 키워드 필터(선택): 전체기사 피드에서 특정 주제만 남길 때 사용.
+            # feed에 include/exclude가 있으면 이 소스에만 적용(전역 filter와 별개).
+            if feed.get("include") or feed.get("exclude"):
+                kept = curate.keyword_filter(got, feed.get("include"), feed.get("exclude"))
+                print(f"[rss:{name}] {len(got)}건 → 필터 후 {len(kept)}건")
+                got = kept
+            else:
+                print(f"[rss:{name}] {len(got)}건")
             items += got
         except Exception as e:  # noqa: BLE001
             print(f"[rss:{name}] 실패: {e}", file=sys.stderr)
