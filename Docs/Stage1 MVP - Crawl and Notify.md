@@ -189,26 +189,22 @@ rss:
 0 7 * * * cd /path/to/arip && uv run python -m arip.main >> data/run.log 2>&1
 ```
 
-**B. GitHub Actions (서버 없이)**
-```yaml
-# .github/workflows/daily.yml
-on:
-  schedule:
-    - cron: "0 22 * * *"   # UTC 22:00 = KST 07:00
-jobs:
-  brief:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv run python -m arip.main
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-```
+**B. GitHub Actions (서버 없이)** — 실제 워크플로가 [`.github/workflows/daily.yml`](../.github/workflows/daily.yml)에 있음.
 
-> GitHub Actions를 쓰면 SQLite 상태가 매 실행마다 초기화되므로, 이때는 dedup 상태를
-> 리포지토리 커밋 또는 Actions 캐시/아티팩트로 유지해야 함(또는 B 대신 A 권장).
+매일 UTC 22:00(KST 07:00) 자동 실행 + Actions 탭에서 수동 실행(`workflow_dispatch`) 가능.
+
+**설정: GitHub → Settings → Secrets and variables → Actions** 에 아래를 등록:
+
+| Secret 이름 | 값 | 필수 |
+|---|---|---|
+| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL | ✅ |
+| `LLM_PROVIDER` | `openai` / `anthropic` / `gemini` | 선택 |
+| `LLM_API_KEY` | 해당 provider API 키 | 선택 |
+| `LLM_MODEL` | 예: `gpt-4o-mini` | 선택 |
+
+> **중복 제거 상태 유지:** Actions 러너는 실행마다 초기화되므로, 워크플로는 `actions/cache`로
+> `data/`(SQLite `seen.db`)를 실행 간 유지한다. 캐시는 best-effort라서 드물게 유실 시
+> 그날 하루 중복 알림이 올 수 있음(치명적이지 않음). 완전한 영속성이 필요하면 방식 A(서버 cron) 권장.
 
 ---
 

@@ -1,0 +1,41 @@
+name: Daily AI Research Brief
+
+on:
+  schedule:
+    - cron: "0 22 * * *" # 매일 UTC 22:00 = KST 07:00
+  workflow_dispatch: {} # 수동 실행 버튼 (Actions 탭에서 Run workflow)
+
+concurrency:
+  group: daily-brief
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 중복 제거 상태(data/seen.db)를 실행 간 유지.
+      # 매 실행마다 새 키로 저장하고, restore-keys 접두사로 직전 캐시를 복원한다.
+      # (Actions 러너는 실행마다 초기화되므로 이게 없으면 매일 전량이 "신규"가 됨)
+      - name: Restore dedup state (seen.db)
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: seen-db-${{ github.run_id }}
+          restore-keys: |
+            seen-db-
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Run brief
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+        run: uv run arip

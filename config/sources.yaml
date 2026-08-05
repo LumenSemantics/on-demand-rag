@@ -1,5 +1,6 @@
 # Stage 1 MVP 수집 소스 설정
 # 소스 추가는 대부분 여기에 URL 한 줄 넣는 것으로 끝납니다.
+# (RSS URL은 2026-08 기준 실제 접속 확인된 것들)
 
 arxiv:
   categories: [cs.AI, cs.CL, cs.LG, cs.IR]
@@ -10,9 +11,24 @@ huggingface:
   limit: 30
 
 rss:
-  - name: The Batch
-    url: https://www.deeplearning.ai/the-batch/feed/
-    limit: 10
   - name: HuggingFace Blog
-    url: https://huggingface.co/blog/rss.xml
-    limit: 10
+    url: https://huggingface.co/blog/feed.xml
+    limit: 8
+  - name: OpenAI
+    url: https://openai.com/news/rss.xml
+    limit: 5
+  - name: Google Research
+    url: https://research.google/blog/rss/
+    limit: 5
+  - name: MIT Tech Review
+    url: https://www.technologyreview.com/feed/
+    limit: 8
+  - name: The Decoder
+    url: https://the-decoder.com/feed/
+    limit: 8
+  - name: Import AI
+    url: https://importai.substack.com/feed
+    limit: 5
+  - name: The Sequence
+    url: https://thesequence.substack.com/feed
+    limit: 5
