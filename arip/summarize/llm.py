@@ -66,7 +66,7 @@ def _anthropic(prompt: str, api_key: str, model: str, max_tokens: int = 150) -> 
 
 
 def _gemini(prompt: str, api_key: str, model: str, max_tokens: int = 150) -> str:
-    m = model or "gemini-2.0-flash"
+    m = model or "gemini-flash-lite-latest"
     r = httpx.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
         params={"key": api_key},
