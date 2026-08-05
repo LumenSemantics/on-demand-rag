@@ -1,0 +1,18 @@
+# Stage 1 MVP 수집 소스 설정
+# 소스 추가는 대부분 여기에 URL 한 줄 넣는 것으로 끝납니다.
+
+arxiv:
+  categories: [cs.AI, cs.CL, cs.LG, cs.IR]
+  max_results: 30
+
+huggingface:
+  daily_papers: true
+  limit: 30
+
+rss:
+  - name: The Batch
+    url: https://www.deeplearning.ai/the-batch/feed/
+    limit: 10
+  - name: HuggingFace Blog
+    url: https://huggingface.co/blog/rss.xml
+    limit: 10
