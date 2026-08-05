@@ -6,7 +6,8 @@ from arip.archive import rebuild_index, write_report
 from arip.catalog import CATEGORY_ORDER, _parse_llm_labels, classify
 from arip.collectors.base import Item
 from arip.curate import keyword_filter, sort_and_cap
-from arip.report.builder import build_report
+from arip.notify.kakao import build_template
+from arip.report.builder import build_digest, build_report
 from arip.store.dedup import SeenStore
 
 
@@ -36,6 +37,31 @@ def test_classify_categories():
     assert "멀티모달" in classify(_mk("3", title="A vision-language model for video"))
     # 아무 키워드 없으면 기타
     assert "기타" in classify(_mk("4", title="Something entirely unrelated xyz"))
+
+
+def test_build_digest_has_counts():
+    items = [
+        _mk("1", source="arxiv", title="LLM agent tool use"),
+        _mk("2", source="huggingface", title="Retrieval augmented generation"),
+    ]
+    from arip.catalog import classify_all
+
+    classify_all(items)
+    digest = build_digest(items, group_by="category")
+    assert "신규 2건" in digest
+    assert "🤖 에이전트·툴 1" in digest
+    # 다이제스트는 짧아야 함(카카오 2000자 제한)
+    assert len(digest) < 2000
+
+
+def test_kakao_template_truncates_and_has_link():
+    long_text = "가" * 5000
+    tpl = build_template(long_text, "https://example.com/r.md")
+    assert tpl["object_type"] == "text"
+    assert len(tpl["text"]) <= 1900 + 20  # 상한 + 말줄임 여유
+    assert tpl["link"]["web_url"] == "https://example.com/r.md"
+    # 링크 미지정 시 폴백 URL
+    assert build_template("hi")["link"]["web_url"].startswith("http")
 
 
 def test_parse_llm_labels():

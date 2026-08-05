@@ -125,3 +125,21 @@ def build_report(items: Sequence[Item], group_by: str = "category") -> str:
     else:
         lines += _catalog_sections(items)
     return "\n".join(lines).rstrip() + "\n"
+
+
+def build_digest(items: Sequence[Item], group_by: str = "category") -> str:
+    """짧은 요약(카테고리/소스별 건수). 카카오 등 길이 제한 채널용."""
+    now = datetime.now().strftime("%m/%d")
+    lines = [f"🤖 AI 연구 브리핑 {now}", f"신규 {len(items)}건", ""]
+    if group_by == "source":
+        by: dict[str, int] = {}
+        for it in items:
+            by[it.source] = by.get(it.source, 0) + 1
+        for src in sorted(by, key=_order):
+            lines.append(f"{_label(src)} {by[src]}")
+    else:
+        from ..catalog import counts
+
+        for label, n in counts(items).items():
+            lines.append(f"{label} {n}")
+    return "\n".join(lines)

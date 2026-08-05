@@ -32,6 +32,9 @@ class Config:
     smtp_password: str
     email_to: str
     archive_dir: str
+    kakao_rest_api_key: str
+    kakao_refresh_token: str
+    report_base_url: str
 
 
 def load_config(sources_file: str = "config/sources.yaml") -> Config:
@@ -53,4 +56,7 @@ def load_config(sources_file: str = "config/sources.yaml") -> Config:
         smtp_password=os.getenv("SMTP_PASSWORD", ""),
         email_to=os.getenv("EMAIL_TO", ""),
         archive_dir=os.getenv("ARCHIVE_DIR", "reports"),
+        kakao_rest_api_key=os.getenv("KAKAO_REST_API_KEY", "").strip(),
+        kakao_refresh_token=os.getenv("KAKAO_REFRESH_TOKEN", "").strip(),
+        report_base_url=os.getenv("REPORT_BASE_URL", "").strip().rstrip("/"),
     )
