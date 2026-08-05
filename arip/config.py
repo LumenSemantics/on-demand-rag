@@ -23,6 +23,7 @@ class Config:
     smtp_user: str
     smtp_password: str
     email_to: str
+    archive_dir: str
 
 
 def load_config(sources_file: str = "config/sources.yaml") -> Config:
@@ -43,4 +44,5 @@ def load_config(sources_file: str = "config/sources.yaml") -> Config:
         smtp_user=os.getenv("SMTP_USER", ""),
         smtp_password=os.getenv("SMTP_PASSWORD", ""),
         email_to=os.getenv("EMAIL_TO", ""),
+        archive_dir=os.getenv("ARCHIVE_DIR", "reports"),
     )

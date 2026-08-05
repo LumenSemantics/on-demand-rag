@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write   # reports/ 아카이브를 저장소에 커밋하기 위해 필요
 
 jobs:
   brief:
@@ -43,3 +43,17 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: uv run arip
+
+      # 생성된 reports/ 를 저장소에 커밋 → GitHub이 .md를 렌더링하는 무료 웹 아카이브
+      - name: Commit archived report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports
+          if git diff --cached --quiet; then
+            echo "커밋할 리포트 변경 없음."
+          else
+            git commit -m "Archive brief $(date -u +%Y-%m-%d)"
+            git push
+          fi

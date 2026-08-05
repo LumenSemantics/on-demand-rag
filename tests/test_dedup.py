@@ -1,6 +1,8 @@
 import os
 import tempfile
+from datetime import datetime
 
+from arip.archive import rebuild_index, write_report
 from arip.collectors.base import Item
 from arip.curate import keyword_filter, sort_and_cap
 from arip.report.builder import build_report
@@ -25,6 +27,21 @@ def test_keyword_include_and_exclude():
     assert {i.id for i in exc} == {"1", "3"}
     # 둘 다 비면 전체 통과
     assert len(keyword_filter(items, [], [])) == 3
+
+
+def test_archive_write_and_index_newest_first():
+    with tempfile.TemporaryDirectory() as d:
+        p1 = write_report("# A\n", d, now=datetime(2026, 8, 1, 7, 0))
+        p2 = write_report("# B\n", d, now=datetime(2026, 8, 3, 7, 0))
+        assert p1.name == "2026-08-01.md"
+        assert p2.name == "2026-08-03.md"
+
+        idx = rebuild_index(d)
+        text = idx.read_text(encoding="utf-8")
+        assert "총 2일치" in text
+        # 최신(08-03)이 위, index.md 자신은 목록에서 제외
+        assert text.index("2026-08-03") < text.index("2026-08-01")
+        assert "index.md)" not in text
 
 
 def test_sort_and_cap_by_score_per_source():

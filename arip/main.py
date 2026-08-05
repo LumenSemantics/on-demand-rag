@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import curate
+from . import archive, curate
 from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
@@ -72,6 +72,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="ARIP Stage 1 — Crawl & Notify")
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
+    parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")
     parser.add_argument("--limit-summary", type=int, default=0, help="요약할 최대 항목 수 (0=전체 신규 항목)")
     args = parser.parse_args()
 
@@ -130,6 +131,15 @@ def main() -> int:
         print("\n" + report)
         store.close()
         return 0
+
+    # 아카이브: reports/YYYY-MM-DD.md 저장 + 인덱스 재생성 (발송과 독립)
+    if not args.no_archive:
+        try:
+            path = archive.write_report(report, cfg.archive_dir)
+            archive.rebuild_index(cfg.archive_dir)
+            print(f"[archive] 저장: {path}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[archive] 실패: {e}", file=sys.stderr)
 
     sent = False
     if cfg.slack_webhook:
