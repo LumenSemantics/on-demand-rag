@@ -64,6 +64,15 @@ def test_kakao_template_truncates_and_has_link():
     assert build_template("hi")["link"]["web_url"].startswith("http")
 
 
+def test_email_build_message_multi_recipients():
+    from arip.notify.email import build_message
+
+    recipients, raw = build_message("me@example.com", "a@x.com, b@y.com , ", "제목", "본문")
+    assert recipients == ["a@x.com", "b@y.com"]  # 공백·빈 항목 정리
+    assert "To: a@x.com, b@y.com" in raw
+    assert "From: me@example.com" in raw
+
+
 def test_parse_llm_labels():
     # "항목번호=카테고리번호" 파싱, 범위 밖(99)은 None 폴백
     out = _parse_llm_labels("1=1\n2=2\n3=99\n", 3)
