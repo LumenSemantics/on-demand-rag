@@ -3,6 +3,7 @@ import tempfile
 from datetime import datetime
 
 from arip.archive import rebuild_index, write_report
+from arip.catalog import classify
 from arip.collectors.base import Item
 from arip.curate import keyword_filter, sort_and_cap
 from arip.report.builder import build_report
@@ -27,6 +28,26 @@ def test_keyword_include_and_exclude():
     assert {i.id for i in exc} == {"1", "3"}
     # 둘 다 비면 전체 통과
     assert len(keyword_filter(items, [], [])) == 3
+
+
+def test_classify_categories():
+    assert "에이전트" in classify(_mk("1", title="Multi-Agent tool use for planning"))
+    assert "RAG" in classify(_mk("2", title="Retrieval-augmented generation with reranking"))
+    assert "멀티모달" in classify(_mk("3", title="A vision-language model for video"))
+    # 아무 키워드 없으면 기타
+    assert "기타" in classify(_mk("4", title="Something entirely unrelated xyz"))
+
+
+def test_build_report_catalog_groups_by_category():
+    items = [
+        _mk("1", source="arxiv", title="LLM agent with tool use"),
+        _mk("2", source="huggingface", title="Retrieval augmented generation"),
+    ]
+    report = build_report(items, group_by="category")
+    assert "🤖 에이전트·툴" in report
+    assert "🔎 검색·RAG" in report
+    # 카탈로그 모드는 소스 태그(· arXiv / · HF)를 붙인다
+    assert "· arXiv" in report or "· HF" in report
 
 
 def test_archive_write_and_index_newest_first():

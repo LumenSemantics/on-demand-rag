@@ -48,31 +48,80 @@ def _order(source: str) -> tuple[int, str]:
     return (_SOURCE_ORDER.get(source, 2), source)
 
 
-def build_report(items: Sequence[Item]) -> str:
-    """신규 항목들을 소스별로 묶어 Markdown 리포트로 만든다."""
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+def _source_tag(source: str) -> str:
+    if source == "arxiv":
+        return "arXiv"
+    if source == "huggingface":
+        return "HF"
+    if source.startswith("rss:"):
+        return source[4:]
+    return source
 
+
+def _render_item(it: Item, with_source_tag: bool = False) -> list[str]:
+    out: list[str] = []
+    tag = f" · {_source_tag(it.source)}" if with_source_tag else ""
+    line = f"- [{it.title}]({it.url}){tag}"
+    if it.extra:
+        line += f"  {it.extra}"
+    out.append(line)
+    # LLM 요약(한국어)이 있으면 우선, 없으면 초록 발췌(무료)로 대체
+    detail = it.summary or _excerpt(it.abstract)
+    if detail:
+        out.append(f"    - {detail}")
+    return out
+
+
+def _source_sections(items: Sequence[Item]) -> list[str]:
     by_source: dict[str, list[Item]] = {}
     for it in items:
         by_source.setdefault(it.source, []).append(it)
+    lines: list[str] = []
+    for source in sorted(by_source, key=_order):
+        group = by_source[source]
+        lines.append(f"## {_label(source)} ({len(group)})")
+        for it in group:
+            lines += _render_item(it)
+        lines.append("")
+    return lines
 
+
+def _catalog_sections(items: Sequence[Item]) -> list[str]:
+    """AI 주제 카탈로그로 묶는다(카테고리별). 소스 태그를 함께 표기."""
+    from ..catalog import CATEGORY_ORDER, classify
+
+    by_cat: dict[str, list[Item]] = {}
+    for it in items:
+        label = it.category or classify(it)
+        by_cat.setdefault(label, []).append(it)
+
+    lines: list[str] = []
+    for label in CATEGORY_ORDER:
+        group = by_cat.get(label)
+        if not group:
+            continue
+        lines.append(f"## {label} ({len(group)})")
+        for it in group:
+            lines += _render_item(it, with_source_tag=True)
+        lines.append("")
+    return lines
+
+
+def build_report(items: Sequence[Item], group_by: str = "category") -> str:
+    """신규 항목을 Markdown 리포트로 만든다.
+
+    group_by="category": AI 주제 카탈로그로 묶음(기본)
+    group_by="source":   소스별(arXiv/HF/RSS)로 묶음
+    """
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
     lines: list[str] = [
         f"# 🤖 AI 연구 브리핑 — {now}",
         "",
         f"**신규 {len(items)}건**",
         "",
     ]
-    for source in sorted(by_source, key=_order):
-        group = by_source[source]
-        lines.append(f"## {_label(source)} ({len(group)})")
-        for it in group:
-            line = f"- [{it.title}]({it.url})"
-            if it.extra:
-                line += f"  {it.extra}"
-            lines.append(line)
-            # LLM 요약(한국어)이 있으면 우선, 없으면 초록 발췌(무료)로 대체
-            detail = it.summary or _excerpt(it.abstract)
-            if detail:
-                lines.append(f"    - {detail}")
-        lines.append("")
+    if group_by == "source":
+        lines += _source_sections(items)
+    else:
+        lines += _catalog_sections(items)
     return "\n".join(lines).rstrip() + "\n"

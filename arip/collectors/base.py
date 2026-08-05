@@ -16,4 +16,5 @@ class Item:
     published: str = ""
     extra: str = ""  # 부가 표시 (예: "👍 42")
     score: int = 0  # 정렬용 중요도 (예: HF upvotes). 없으면 0
+    category: str = ""  # AI 카탈로그 분류 라벨 (catalog.classify로 채움)
     summary: str = ""  # LLM 한 줄 요약 (나중에 채워짐)

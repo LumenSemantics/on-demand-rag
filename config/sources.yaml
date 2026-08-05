@@ -2,6 +2,10 @@
 # 소스 추가는 대부분 여기에 URL 한 줄 넣는 것으로 끝납니다.
 # (RSS URL은 2026-08 기준 실제 접속 확인된 것들)
 
+# 브리핑 묶음 기준: category(AI 주제 카탈로그) 또는 source(소스별)
+report:
+  group_by: category
+
 # 볼륨 조절: 키워드 필터 + 소스별 상한 (제목+초록 기준, 대소문자 무시)
 filter:
   include: []          # 예: [rag, agent, llm] → 이 중 하나라도 있어야 통과. 비면 전체 통과

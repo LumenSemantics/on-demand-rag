@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import archive, curate
+from . import archive, catalog, curate
 from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
@@ -73,6 +73,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
     parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")
+    parser.add_argument("--group-by", choices=["category", "source"], default=None,
+                        help="브리핑 묶음 기준 (기본: 설정 또는 category)")
     parser.add_argument("--limit-summary", type=int, default=0, help="요약할 최대 항목 수 (0=전체 신규 항목)")
     args = parser.parse_args()
 
@@ -116,6 +118,13 @@ def main() -> int:
     if len(display_items) != len(new_items):
         print(f"표시 {len(display_items)}건 (소스별 상한 {max_per_source})")
 
+    # 브리핑 묶음 기준 결정 (CLI > 설정 > 기본 category) + 카탈로그 분류
+    report_cfg = (cfg.sources or {}).get("report") or {}
+    group_by = args.group_by or report_cfg.get("group_by") or "category"
+    if group_by == "category":
+        catalog.classify_all(display_items)
+        print(f"카탈로그 분류: {catalog.counts(display_items)}")
+
     # 요약 (선택) — 실제 표시할 항목만
     do_summary = (not args.no_summary) and bool(cfg.llm_provider) and bool(cfg.llm_api_key)
     if do_summary:
@@ -125,7 +134,7 @@ def main() -> int:
             if it.abstract:
                 it.summary = llm.summarize(it.abstract, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
 
-    report = build_report(display_items)
+    report = build_report(display_items, group_by=group_by)
 
     if args.dry_run:
         print("\n" + report)
