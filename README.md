@@ -75,6 +75,19 @@ rss:
     limit: 10
 ```
 
+### 볼륨 조절 · 필터
+
+같은 파일의 `filter` 섹션으로 브리핑 양을 조절합니다 (제목+초록 기준, 대소문자 무시):
+
+```yaml
+filter:
+  include: [rag, agent, llm]   # 이 중 하나라도 있어야 통과 (비면 전체)
+  exclude: [robotics]          # 걸리면 제외
+  max_per_source: 10           # 소스마다 최대 N건 (HuggingFace는 upvotes 높은 순)
+```
+
+상한으로 잘린 항목도 "본 것"으로 기록되어 다음날 다시 알림되지 않습니다.
+
 ### 매일 자동 실행
 
 **cron (매일 07:00):**

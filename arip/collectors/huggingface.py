@@ -18,6 +18,10 @@ def collect(limit: int = 30) -> list[Item]:
         paper = entry.get("paper", {}) or {}
         pid = paper.get("id", "")
         title = paper.get("title") or entry.get("title", "")
+        try:
+            upvotes = int(paper.get("upvotes", 0) or 0)
+        except (TypeError, ValueError):
+            upvotes = 0
         items.append(
             Item(
                 id=f"hf:{pid}" if pid else f"hf:{title}",
@@ -27,7 +31,8 @@ def collect(limit: int = 30) -> list[Item]:
                 abstract=" ".join((paper.get("summary", "") or "").split()),
                 authors=[a.get("name", "") for a in paper.get("authors", []) or []],
                 published=paper.get("publishedAt", "") or entry.get("publishedAt", ""),
-                extra=f"👍 {paper.get('upvotes', 0)}",
+                extra=f"👍 {upvotes}",
+                score=upvotes,  # 인기순 정렬에 사용
             )
         )
     return items

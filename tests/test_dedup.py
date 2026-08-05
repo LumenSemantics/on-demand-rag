@@ -2,8 +2,46 @@ import os
 import tempfile
 
 from arip.collectors.base import Item
+from arip.curate import keyword_filter, sort_and_cap
 from arip.report.builder import build_report
 from arip.store.dedup import SeenStore
+
+
+def _mk(id, source="arxiv", title="T", abstract="", score=0):
+    return Item(id=id, source=source, title=title, url="http://x", abstract=abstract, score=score)
+
+
+def test_keyword_include_and_exclude():
+    items = [
+        _mk("1", title="A survey of RAG systems"),
+        _mk("2", title="Robotics manipulation"),
+        _mk("3", title="LLM agent planning"),
+    ]
+    # include: rag/agent 중 하나 있어야 통과
+    inc = keyword_filter(items, ["rag", "agent"], [])
+    assert {i.id for i in inc} == {"1", "3"}
+    # exclude: robotics 제외
+    exc = keyword_filter(items, [], ["robotics"])
+    assert {i.id for i in exc} == {"1", "3"}
+    # 둘 다 비면 전체 통과
+    assert len(keyword_filter(items, [], [])) == 3
+
+
+def test_sort_and_cap_by_score_per_source():
+    items = [
+        _mk("a1", source="huggingface", score=5),
+        _mk("a2", source="huggingface", score=50),
+        _mk("a3", source="huggingface", score=1),
+        _mk("b1", source="arxiv", score=0),
+        _mk("b2", source="arxiv", score=0),
+    ]
+    out = sort_and_cap(items, max_per_source=2)
+    hf = [i.id for i in out if i.source == "huggingface"]
+    ax = [i.id for i in out if i.source == "arxiv"]
+    # HF는 upvotes 높은 순 상위 2개
+    assert hf == ["a2", "a1"]
+    # arXiv는 score 동일 → 원래 순서 유지, 상한 2
+    assert ax == ["b1", "b2"]
 
 
 def test_filter_new_and_mark():

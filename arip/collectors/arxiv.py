@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import re
+
 import httpx
 import feedparser
 
 from .base import Item
 
 ARXIV_API = "https://export.arxiv.org/api/query"
+
+# 논문 id 끝의 버전 접미사(v1, v2 …) 제거용.
+# 개정판이 나와도 같은 논문으로 취급해 재알림을 막는다.
+_ARXIV_VERSION = re.compile(r"v\d+$")
 
 
 def collect(categories: list[str], max_results: int = 30) -> list[Item]:
@@ -23,9 +29,10 @@ def collect(categories: list[str], max_results: int = 30) -> list[Item]:
     feed = feedparser.parse(resp.text)
     items: list[Item] = []
     for e in feed.entries:
+        raw_id = e.get("id", e.get("link", ""))
         items.append(
             Item(
-                id=e.get("id", e.get("link", "")),
+                id=_ARXIV_VERSION.sub("", raw_id),  # 버전 제거해 안정적 dedup
                 source="arxiv",
                 title=" ".join(e.get("title", "").split()),
                 url=e.get("link", ""),

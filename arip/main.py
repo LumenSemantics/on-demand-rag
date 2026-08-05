@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from . import curate
 from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
@@ -13,9 +14,13 @@ from .store.dedup import SeenStore
 from .summarize import llm
 
 
-def collect_all(cfg: Config) -> list[Item]:
-    """설정된 모든 소스를 수집한다. 한 소스가 실패해도 나머지는 진행."""
+def collect_all(cfg: Config) -> tuple[list[Item], list[str]]:
+    """설정된 모든 소스를 수집한다. 한 소스가 실패해도 나머지는 진행.
+
+    반환: (수집 항목, 실패한 소스 이름 목록)
+    """
     items: list[Item] = []
+    failed: list[str] = []
     src = cfg.sources or {}
 
     ax = src.get("arxiv") or {}
@@ -26,6 +31,7 @@ def collect_all(cfg: Config) -> list[Item]:
             items += got
         except Exception as e:  # noqa: BLE001
             print(f"[arxiv] 실패: {e}", file=sys.stderr)
+            failed.append("arxiv")
 
     hf = src.get("huggingface") or {}
     if hf.get("daily_papers"):
@@ -35,6 +41,7 @@ def collect_all(cfg: Config) -> list[Item]:
             items += got
         except Exception as e:  # noqa: BLE001
             print(f"[huggingface] 실패: {e}", file=sys.stderr)
+            failed.append("huggingface")
 
     for feed in src.get("rss", []) or []:
         name = feed.get("name", "?")
@@ -44,8 +51,9 @@ def collect_all(cfg: Config) -> list[Item]:
             items += got
         except Exception as e:  # noqa: BLE001
             print(f"[rss:{name}] 실패: {e}", file=sys.stderr)
+            failed.append(f"rss:{name}")
 
-    return items
+    return items, failed
 
 
 def _force_utf8_stdout() -> None:
@@ -70,10 +78,30 @@ def main() -> int:
     cfg = load_config()
     store = SeenStore(cfg.db_path)
 
-    all_items = collect_all(cfg)
+    all_items, failed = collect_all(cfg)
     print(f"총 수집 {len(all_items)}건")
+    if failed:
+        print(f"실패한 소스: {', '.join(failed)}", file=sys.stderr)
 
-    new_items = store.filter_new(all_items)
+    # 헬스체크: 아무것도 못 받았는데 실패가 있으면 = 모든 소스 장애로 간주하고 경고
+    if not all_items and failed:
+        warn = "⚠️ AI 브리핑: 모든 소스 수집 실패 — " + ", ".join(failed)
+        print(warn, file=sys.stderr)
+        if not args.dry_run and cfg.slack_webhook:
+            try:
+                slack.send(cfg.slack_webhook, warn)
+            except Exception as e:  # noqa: BLE001
+                print(f"[slack] 경고 발송 실패: {e}", file=sys.stderr)
+        store.close()
+        return 1
+
+    # 키워드 필터 (sources.yaml의 filter 섹션)
+    flt = (cfg.sources or {}).get("filter") or {}
+    filtered = curate.keyword_filter(all_items, flt.get("include"), flt.get("exclude"))
+    if len(filtered) != len(all_items):
+        print(f"필터 후 {len(filtered)}건 (제외 {len(all_items) - len(filtered)}건)")
+
+    new_items = store.filter_new(filtered)
     print(f"신규 {len(new_items)}건")
 
     if not new_items:
@@ -81,15 +109,22 @@ def main() -> int:
         store.close()
         return 0
 
+    # 소스별 정렬(중요도)·상한
+    max_per_source = int(flt.get("max_per_source", 0) or 0)
+    display_items = curate.sort_and_cap(new_items, max_per_source)
+    if len(display_items) != len(new_items):
+        print(f"표시 {len(display_items)}건 (소스별 상한 {max_per_source})")
+
+    # 요약 (선택) — 실제 표시할 항목만
     do_summary = (not args.no_summary) and bool(cfg.llm_provider) and bool(cfg.llm_api_key)
     if do_summary:
-        targets = new_items if args.limit_summary <= 0 else new_items[: args.limit_summary]
+        targets = display_items if args.limit_summary <= 0 else display_items[: args.limit_summary]
         print(f"요약 중… ({len(targets)}건, provider={cfg.llm_provider})")
         for it in targets:
             if it.abstract:
                 it.summary = llm.summarize(it.abstract, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
 
-    report = build_report(new_items)
+    report = build_report(display_items)
 
     if args.dry_run:
         print("\n" + report)
@@ -113,6 +148,7 @@ def main() -> int:
         print("발송 대상 미설정(SLACK_WEBHOOK_URL 등) — 콘솔 출력:")
         print("\n" + report)
 
+    # 상한으로 이번에 표시 안 한 초과분까지 seen 처리해 다음날 재알림을 막는다
     store.mark_seen(new_items)
     store.close()
     print("완료.")
