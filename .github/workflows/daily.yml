@@ -9,9 +9,13 @@ concurrency:
   group: daily-brief
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   brief:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
