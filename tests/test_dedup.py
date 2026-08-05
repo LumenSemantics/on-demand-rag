@@ -39,3 +39,19 @@ def test_build_report_contains_title_and_summary():
     assert "Hello" in report
     assert "한 줄 요약" in report
     assert "신규 1건" in report
+
+
+def test_build_report_falls_back_to_excerpt_when_no_summary():
+    abstract = "First sentence here. Second sentence here. Third should be dropped."
+    items = [Item(id="a", source="arxiv", title="T", url="http://x", abstract=abstract)]
+    report = build_report(items)
+    # LLM 요약이 없으면 앞 2문장 발췌가 들어가고 3번째 문장은 빠진다
+    assert "First sentence here. Second sentence here." in report
+    assert "Third should be dropped" not in report
+
+
+def test_build_report_strips_html_in_excerpt():
+    items = [Item(id="a", source="rss:X", title="T", url="http://x", abstract="<p>Hello <b>world</b>.</p>")]
+    report = build_report(items)
+    assert "Hello world." in report
+    assert "<p>" not in report and "<b>" not in report
