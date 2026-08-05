@@ -1,0 +1,30 @@
+# Secrets / env
+.env
+.env.local
+*.key
+
+# Data / local state
+data/
+*.db
+*.sqlite
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv/
+dist/
+build/
+*.egg-info/
+
+# Node (later stages)
+node_modules/
+.next/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
