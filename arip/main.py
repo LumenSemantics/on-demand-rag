@@ -173,12 +173,15 @@ def main() -> int:
         print("[slack] 발송 완료")
         sent = True
     if cfg.smtp_host and cfg.email_to:
-        email_notify.send(
-            cfg.smtp_host, cfg.smtp_port, cfg.smtp_user, cfg.smtp_password,
-            cfg.email_to, "AI 연구 브리핑", report,
-        )
-        print("[email] 발송 완료")
-        sent = True
+        try:
+            email_notify.send(
+                cfg.smtp_host, cfg.smtp_port, cfg.smtp_user, cfg.smtp_password,
+                cfg.email_to, "AI 연구 브리핑", report,
+            )
+            print("[email] 발송 완료")
+            sent = True
+        except Exception as e:  # noqa: BLE001
+            print(f"[email] 실패: {e}", file=sys.stderr)
 
     # 카카오톡: 길이 제한 때문에 다이제스트 + 전체 보기 링크로 발송
     if cfg.kakao_rest_api_key and cfg.kakao_refresh_token:
