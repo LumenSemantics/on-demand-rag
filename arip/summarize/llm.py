@@ -10,26 +10,31 @@ PROMPT = (
 )
 
 
+def complete(prompt: str, provider: str, api_key: str, model: str, max_tokens: int = 150) -> str:
+    """provider별 LLM 호출 공통 진입점. 실패 시 예외를 그대로 던진다(호출측에서 처리)."""
+    if not provider or not api_key:
+        return ""
+    if provider == "openai":
+        return _openai(prompt, api_key, model, max_tokens)
+    if provider == "anthropic":
+        return _anthropic(prompt, api_key, model, max_tokens)
+    if provider == "gemini":
+        return _gemini(prompt, api_key, model, max_tokens)
+    return ""
+
+
 def summarize(text: str, provider: str, api_key: str, model: str) -> str:
     """초록을 한 줄로 요약한다. 실패하거나 미설정이면 빈 문자열(=요약 생략)."""
     text = (text or "").strip()
     if not text or not provider or not api_key:
         return ""
-
-    prompt = PROMPT + text[:4000]
     try:
-        if provider == "openai":
-            return _openai(prompt, api_key, model)
-        if provider == "anthropic":
-            return _anthropic(prompt, api_key, model)
-        if provider == "gemini":
-            return _gemini(prompt, api_key, model)
+        return complete(PROMPT + text[:4000], provider, api_key, model, max_tokens=150)
     except Exception:
         return ""
-    return ""
 
 
-def _openai(prompt: str, api_key: str, model: str) -> str:
+def _openai(prompt: str, api_key: str, model: str, max_tokens: int = 150) -> str:
     r = httpx.post(
         "https://api.openai.com/v1/chat/completions",
         headers={"Authorization": f"Bearer {api_key}"},
@@ -37,36 +42,39 @@ def _openai(prompt: str, api_key: str, model: str) -> str:
             "model": model or "gpt-4o-mini",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.2,
-            "max_tokens": 150,
+            "max_tokens": max_tokens,
         },
-        timeout=40.0,
+        timeout=60.0,
     )
     r.raise_for_status()
     return r.json()["choices"][0]["message"]["content"].strip()
 
 
-def _anthropic(prompt: str, api_key: str, model: str) -> str:
+def _anthropic(prompt: str, api_key: str, model: str, max_tokens: int = 150) -> str:
     r = httpx.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
         json={
             "model": model or "claude-3-5-haiku-latest",
-            "max_tokens": 150,
+            "max_tokens": max_tokens,
             "messages": [{"role": "user", "content": prompt}],
         },
-        timeout=40.0,
+        timeout=60.0,
     )
     r.raise_for_status()
     return r.json()["content"][0]["text"].strip()
 
 
-def _gemini(prompt: str, api_key: str, model: str) -> str:
+def _gemini(prompt: str, api_key: str, model: str, max_tokens: int = 150) -> str:
     m = model or "gemini-2.0-flash"
     r = httpx.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
         params={"key": api_key},
-        json={"contents": [{"parts": [{"text": prompt}]}]},
-        timeout=40.0,
+        json={
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": max_tokens},
+        },
+        timeout=60.0,
     )
     r.raise_for_status()
     return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()

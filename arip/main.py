@@ -75,6 +75,8 @@ def main() -> int:
     parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")
     parser.add_argument("--group-by", choices=["category", "source"], default=None,
                         help="브리핑 묶음 기준 (기본: 설정 또는 category)")
+    parser.add_argument("--classify", choices=["keyword", "llm"], default=None,
+                        help="카탈로그 분류 방식 (기본: 설정 또는 keyword). llm은 LLM 키 필요")
     parser.add_argument("--limit-summary", type=int, default=0, help="요약할 최대 항목 수 (0=전체 신규 항목)")
     args = parser.parse_args()
 
@@ -122,8 +124,15 @@ def main() -> int:
     report_cfg = (cfg.sources or {}).get("report") or {}
     group_by = args.group_by or report_cfg.get("group_by") or "category"
     if group_by == "category":
-        catalog.classify_all(display_items)
-        print(f"카탈로그 분류: {catalog.counts(display_items)}")
+        mode = args.classify or report_cfg.get("classify") or "keyword"
+        if mode == "llm" and cfg.llm_provider and cfg.llm_api_key:
+            print(f"카탈로그 분류: LLM ({cfg.llm_provider})")
+            catalog.classify_all_llm(display_items, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
+        else:
+            if mode == "llm":
+                print("LLM 분류 요청됐으나 키 없음 → 키워드 분류로 대체", file=sys.stderr)
+            catalog.classify_all(display_items)
+        print(f"카탈로그 분포: {catalog.counts(display_items)}")
 
     # 요약 (선택) — 실제 표시할 항목만
     do_summary = (not args.no_summary) and bool(cfg.llm_provider) and bool(cfg.llm_api_key)

@@ -88,6 +88,19 @@ filter:
 
 상한으로 잘린 항목도 "본 것"으로 기록되어 다음날 다시 알림되지 않습니다.
 
+### 카탈로그 분류
+
+브리핑을 AI 주제(에이전트·RAG·추론·멀티모달·안전·정책 …)로 묶습니다.
+
+```yaml
+report:
+  group_by: category   # category(주제별) | source(소스별)
+  classify: llm        # llm(정확, LLM 키 필요) | keyword(무료, 규칙)
+```
+
+`classify: llm`인데 LLM 키가 없으면 자동으로 `keyword`로 폴백합니다.
+CLI로도 덮어쓸 수 있습니다: `uv run arip --group-by source --classify keyword`
+
 ### 매일 자동 실행
 
 **cron (매일 07:00):**

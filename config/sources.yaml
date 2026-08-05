@@ -3,8 +3,11 @@
 # (RSS URL은 2026-08 기준 실제 접속 확인된 것들)
 
 # 브리핑 묶음 기준: category(AI 주제 카탈로그) 또는 source(소스별)
+# classify: 카탈로그 분류 방식 — llm(LLM 키 필요, 정확) / keyword(무료, 규칙)
+#           llm인데 키가 없으면 자동으로 keyword로 폴백
 report:
   group_by: category
+  classify: llm
 
 # 볼륨 조절: 키워드 필터 + 소스별 상한 (제목+초록 기준, 대소문자 무시)
 filter:

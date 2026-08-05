@@ -3,7 +3,7 @@ import tempfile
 from datetime import datetime
 
 from arip.archive import rebuild_index, write_report
-from arip.catalog import classify
+from arip.catalog import CATEGORY_ORDER, _parse_llm_labels, classify
 from arip.collectors.base import Item
 from arip.curate import keyword_filter, sort_and_cap
 from arip.report.builder import build_report
@@ -36,6 +36,16 @@ def test_classify_categories():
     assert "멀티모달" in classify(_mk("3", title="A vision-language model for video"))
     # 아무 키워드 없으면 기타
     assert "기타" in classify(_mk("4", title="Something entirely unrelated xyz"))
+
+
+def test_parse_llm_labels():
+    # "항목번호=카테고리번호" 파싱, 범위 밖(99)은 None 폴백
+    out = _parse_llm_labels("1=1\n2=2\n3=99\n", 3)
+    assert out[0] == CATEGORY_ORDER[0]
+    assert out[1] == CATEGORY_ORDER[1]
+    assert out[2] is None
+    # 응답에 빠진 항목도 None
+    assert _parse_llm_labels("1=1", 2)[1] is None
 
 
 def test_build_report_catalog_groups_by_category():
