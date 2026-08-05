@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 중복 제거 상태(data/seen.db)를 실행 간 유지.
       # 매 실행마다 새 키로 저장하고, restore-keys 접두사로 직전 캐시를 복원한다.
       # (Actions 러너는 실행마다 초기화되므로 이게 없으면 매일 전량이 "신규"가 됨)
       - name: Restore dedup state (seen.db)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: data
           key: seen-db-${{ github.run_id }}
