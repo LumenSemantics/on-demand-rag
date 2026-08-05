@@ -1,5 +1,9 @@
 # ARIP — AI Research Intelligence Platform
 
+[![CI](https://github.com/LumenSemantics/on-demand-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/LumenSemantics/on-demand-rag/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+
 AI 연구 동향(논문·모델·블로그·정책)을 자동 수집하고, 지식 그래프와 GraphRAG로 분석·요약해
 매일 리서치 브리핑을 만들어 주는 플랫폼입니다.
 
@@ -133,6 +137,12 @@ arip/
 
 ---
 
+## 기여
+
+기여를 환영합니다. [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+버그·제안은 [이슈](https://github.com/LumenSemantics/on-demand-rag/issues)로 남겨주세요.
+참여 시 [행동 규범](CODE_OF_CONDUCT.md)을 따릅니다.
+
 ## 라이선스
 
-TBD
+[MIT](LICENSE) © 2026 LumenSemantics
