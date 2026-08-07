@@ -55,3 +55,9 @@ def index(qc: QdrantClient, items: Sequence[Item], vectors: Sequence[Sequence[fl
 def search(qc: QdrantClient, query_vector: Sequence[float], limit: int = 5):
     """쿼리 벡터로 유사 문서 검색."""
     return qc.query_points(COLLECTION, query=list(query_vector), limit=limit).points
+
+
+def sample(qc: QdrantClient, n: int = 20) -> list[dict]:
+    """컬렉션에서 문서 payload를 n개 샘플링(평가용)."""
+    points, _ = qc.scroll(COLLECTION, limit=n, with_payload=True, with_vectors=False)
+    return [p.payload for p in points]

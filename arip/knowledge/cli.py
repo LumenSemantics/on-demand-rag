@@ -131,6 +131,30 @@ def _cmd_ask(cfg: Config, question: str) -> int:
     return 0
 
 
+def _cmd_eval(cfg: Config, n: int) -> int:
+    """검색 품질: 색인 문서 제목으로 자기 검색 → recall@1/@5·MRR."""
+    qc = store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+    samples = [p for p in store.sample(qc, n) if p.get("title") and p.get("doc_id")]
+    if not samples:
+        print("샘플 없음")
+        return 0
+    vecs = embed.embed_texts([p["title"] for p in samples], cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)
+    ranks: list[int | None] = []
+    for p, v in zip(samples, vecs):
+        hits = store.search(qc, v, limit=5)
+        rank = next((i for i, h in enumerate(hits, 1) if (h.payload or {}).get("doc_id") == p["doc_id"]), None)
+        ranks.append(rank)
+    total = len(ranks)
+    r1 = sum(1 for r in ranks if r == 1) / total
+    r5 = sum(1 for r in ranks if r is not None) / total
+    mrr = sum(1 / r for r in ranks if r) / total
+    print(f"검색 품질 평가 ({total}건, 제목→자기검색)")
+    print(f"  recall@1 : {r1:.0%}")
+    print(f"  recall@5 : {r5:.0%}")
+    print(f"  MRR      : {mrr:.3f}")
+    return 0
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
@@ -148,6 +172,8 @@ def main() -> int:
     pt.add_argument("--days", type=int, default=7)
     pa = sub.add_parser("ask", help="LangGraph 에이전트: 질문에 근거·인용 답변")
     pa.add_argument("question")
+    pe = sub.add_parser("eval", help="검색 품질 평가(recall@k·MRR)")
+    pe.add_argument("--n", type=int, default=20)
     args = parser.parse_args()
 
     cfg = load_config()
@@ -163,6 +189,8 @@ def main() -> int:
         return _cmd_trends(cfg, args.days)
     if args.cmd == "ask":
         return _cmd_ask(cfg, args.question)
+    if args.cmd == "eval":
+        return _cmd_eval(cfg, args.n)
     return 1
 
 
