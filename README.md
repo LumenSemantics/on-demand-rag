@@ -8,7 +8,10 @@ AI 연구 동향(논문·모델·블로그·정책)을 자동 수집하고, 지�
 매일 리서치 브리핑을 만들어 주는 플랫폼입니다.
 
 > 이 저장소는 **단계(Stage)별로** 점진적으로 구축합니다.
-> 현재 구현 범위는 **Stage 1 (Crawl & Notify)** 입니다.
+> 현재 **Stage 1~3 구현 완료** — 크롤·알림 + 지식계층(Qdrant·Neo4j·GraphRAG) + LangGraph 에이전트.
+> 웹 UI는 **Google Cloud Run(서울)** 에 배포되어 있습니다.
+>
+> 🌐 **라이브:** https://airp-105639816783.asia-northeast3.run.app (검색 · AI 질문 · 트렌드 · 그래프)
 
 ---
 
@@ -16,10 +19,10 @@ AI 연구 동향(논문·모델·블로그·정책)을 자동 수집하고, 지�
 
 | 단계 | 이름 | 핵심 가치 | 추가되는 것 | 상태 |
 |---|---|---|---|---|
-| **1** | **Crawl & Notify** | 매일 AI 소식이 알림으로 온다 | 크롤러 · 중복제거 · 요약 · 알림 | ✅ **구현 중** |
-| 2 | Knowledge | 모은 걸 검색·질의한다 | 임베딩 · **Qdrant** · **Neo4j** · GraphRAG · 검색 API | ⬜ 예정 |
-| 3 | Intelligence | 트렌드·심층 분석 | LangGraph 에이전트 · 트렌드 감지 | ⬜ 예정 |
-| 4 | Application | 웹에서 본다 | Next.js 대시보드 · MCP 서버 | ⬜ 예정 |
+| **1** | **Crawl & Notify** | 매일 AI 소식이 알림으로 온다 | 크롤러 · 중복제거 · 요약 · 알림 | ✅ **완료** |
+| **2** | **Knowledge** | 모은 걸 검색·질의한다 | 임베딩 · **Qdrant** · **Neo4j** · GraphRAG · 검색 API | ✅ **완료** |
+| **3** | **Intelligence** | 트렌드·심층 분석 | LangGraph 에이전트 · 트렌드 감지 · 주간 다이제스트 | ✅ **완료** |
+| 4 | Application | 웹에서 본다 | FastAPI 웹 UI + **Cloud Run 배포** (Next.js·MCP 예정) | 🟡 부분 |
 | 5 | Enterprise | 다중 사용자·운영 | K8s · 인증 · 멀티테넌트 · 모니터링 | ⬜ 예정 |
 
 📚 문서: **[프로젝트 개요](Docs/ARIP%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B0%9C%EC%9A%94.md)** (비전·아키텍처·소스·스택·로드맵) · [Stage 1 스펙](Docs/Stage1%20MVP%20-%20Crawl%20and%20Notify.md) · [ERD](Docs/ERD.md) · [문서 색인](Docs)
@@ -123,18 +126,56 @@ uv run --extra dev pytest
 
 ---
 
-## 프로젝트 구조 (Stage 1)
+## Stage 2~3 — 지식 계층 & 웹 UI
+
+수집한 문서를 **Qdrant(벡터) + Neo4j(그래프)** 에 색인하고, GraphRAG 검색·LangGraph 에이전트로 질의합니다.
+
+```bash
+# 의존성 (지식계층 + 웹 API)
+uv sync --extra api
+
+# .env 에 클라우드 자격증명 추가:
+#   QDRANT_URL / QDRANT_API_KEY / NEO4J_URI / NEO4J_USER / NEO4J_PASSWORD / LLM_API_KEY
+
+uv run arip-kb check           # 클라우드 연결 확인
+uv run arip-kb index           # 최근 브리핑을 Qdrant/Neo4j에 색인
+uv run arip-kb search "효율적인 LLM 추론"   # 벡터 + 그래프 검색
+uv run arip-kb ask "최근 LLM 효율화 동향"    # LangGraph 에이전트(인용 답변)
+uv run arip-kb trends          # 카테고리 급상승 트렌드
+uv run arip-kb weekly          # 주간 다이제스트
+
+uv run arip-api                # 웹 UI 서버 → http://127.0.0.1:8000
+```
+
+일일 배치(`arip`)는 실행 시 신규 항목을 자동으로 색인하고 리포트에 트렌드 섹션을 넣습니다.
+
+### 배포 (Google Cloud Run)
+
+웹 UI는 서울 리전 Cloud Run에 배포되어 있습니다 → **https://airp-105639816783.asia-northeast3.run.app**
+컨테이너·배포 절차는 [Cloud Run 배포 가이드](Docs/Cloud%20Run%20%EB%B0%B0%ED%8F%AC.md)를 참고하세요. GitHub `main`에 push하면 Cloud Build가 자동 재배포합니다.
+
+> 역할 분리: **GitHub Actions**가 매일 지식계층에 *쓰고*, **Cloud Run** 웹 UI가 실시간으로 *읽습니다*. → [아키텍처 다이어그램](Docs/AIRP-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md)
+
+---
+
+## 프로젝트 구조
 
 ```
 arip/
-├── main.py            # 진입점: 수집→중복제거→요약→리포트→알림
+├── main.py            # 진입점: 수집→중복제거→요약→색인→트렌드→알림
 ├── config.py          # .env / sources.yaml 로드
 ├── collectors/        # arxiv, huggingface, rss
 ├── store/dedup.py     # SQLite 중복 제거
 ├── summarize/llm.py   # (선택) 한 줄 요약 (openai/anthropic/gemini)
-├── report/builder.py  # Markdown 리포트
-└── notify/            # slack, email
+├── catalog.py         # 카탈로그 분류 (keyword / llm)
+├── report/builder.py  # Markdown 리포트 · 다이제스트
+├── notify/            # slack, email, kakao
+├── knowledge/         # Stage 2~3: embed · store(Qdrant) · graph(Neo4j)
+│                      #   · trends · agent(LangGraph) · cli(arip-kb)
+└── api/app.py         # Stage 2~3: FastAPI 웹 UI (arip-api)
 ```
+
+주요 진입점(스크립트): `arip`(배치) · `arip-kb`(지식 CLI) · `arip-api`(웹 UI).
 
 ---
 
