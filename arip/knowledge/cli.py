@@ -111,6 +111,24 @@ def _cmd_trends(cfg: Config, days: int) -> int:
     return 0
 
 
+def _cmd_ask(cfg: Config, question: str) -> int:
+    """LangGraph 에이전트: 질문→검색→그래프→답변(인용)."""
+    from . import agent as kb_agent
+
+    print(f"❓ {question}\n")
+    r = kb_agent.ask(cfg, question)
+    print("💡 답변\n" + r["answer"] + "\n")
+    print("── 근거 문서 ──")
+    for i, d in enumerate(r["docs"], 1):
+        print(f"  [{i}] {d['title']}")
+        print(f"       {d['url']}")
+    if r.get("related"):
+        print("── 관련(그래프) ──")
+        for x in r["related"]:
+            print(f"  · {x['title']}")
+    return 0
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
@@ -126,6 +144,8 @@ def main() -> int:
     pr.add_argument("--limit", type=int, default=6)
     pt = sub.add_parser("trends", help="카테고리 급증 + 상위 키워드")
     pt.add_argument("--days", type=int, default=7)
+    pa = sub.add_parser("ask", help="LangGraph 에이전트: 질문에 근거·인용 답변")
+    pa.add_argument("question")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -139,6 +159,8 @@ def main() -> int:
         return _cmd_related(cfg, args.query, args.limit)
     if args.cmd == "trends":
         return _cmd_trends(cfg, args.days)
+    if args.cmd == "ask":
+        return _cmd_ask(cfg, args.question)
     return 1
 
 

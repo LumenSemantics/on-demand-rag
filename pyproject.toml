@@ -18,6 +18,8 @@ dev = ["pytest>=8.0", "ruff>=0.6"]
 knowledge = ["qdrant-client>=1.12", "neo4j>=5.14"]
 # Stage 2 — GraphRAG 검색 API + 웹 UI:  uv sync --extra api
 api = ["fastapi>=0.110", "uvicorn>=0.29", "qdrant-client>=1.12", "neo4j>=5.14"]
+# Stage 3 — LangGraph 리서치 에이전트:  uv sync --extra agent
+agent = ["langgraph>=0.2", "qdrant-client>=1.12", "neo4j>=5.14"]
 
 [project.scripts]
 arip = "arip.main:main"
