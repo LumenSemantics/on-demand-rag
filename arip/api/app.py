@@ -235,10 +235,17 @@ $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 
 
 def main() -> None:
-    """개발 서버 실행: uv run arip-api"""
+    """웹 UI 서버 실행: uv run arip-api [--host H] [--port P]"""
+    import argparse
+
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    p = argparse.ArgumentParser(prog="arip-api", description="ARIP GraphRAG 웹 UI 서버")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    a = p.parse_args()
+    print(f"ARIP 웹 UI → http://{a.host}:{a.port}  (종료: Ctrl+C)")
+    uvicorn.run(app, host=a.host, port=a.port)
 
 
 if __name__ == "__main__":
