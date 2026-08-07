@@ -95,6 +95,30 @@ def _index_knowledge(cfg: Config, items: list[Item]) -> None:
         drv.close()
 
 
+def _insert_trends(cfg: Config, report: str) -> str:
+    """색인된 그래프의 카테고리 급증을 리포트 첫 섹션 앞에 삽입."""
+    from .knowledge import graph as kb_graph
+    from .knowledge import trends as kb_trends
+
+    drv = kb_graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+    try:
+        docs = kb_trends.fetch_docs(drv)
+    finally:
+        drv.close()
+    rows = kb_trends.category_trends(docs, days=7)[:5]
+    if not rows:
+        return report
+    lines = ["## 📈 트렌드 (최근 7일 급증)"]
+    for r in rows:
+        s = "∞" if r["surge"] == float("inf") else f"{r['surge']:.1f}x"
+        lines.append(f"- {r['category']}: {r['recent']}건 ({s})")
+    section = "\n".join(lines) + "\n\n"
+    idx = report.find("\n## ")
+    if idx == -1:
+        return report + "\n" + section
+    return report[: idx + 1] + section + report[idx + 1 :]
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(description="ARIP Stage 1 — Crawl & Notify")
@@ -196,6 +220,20 @@ def main() -> int:
         store.close()
         return 0
 
+    # 지식 계층 색인 (선택): Qdrant/Neo4j가 설정돼 있으면 신규 항목을 적재
+    if not args.no_index and (cfg.qdrant_url or cfg.neo4j_uri):
+        try:
+            _index_knowledge(cfg, display_items)
+        except Exception as e:  # noqa: BLE001
+            print(f"[knowledge] 색인 실패: {e}", file=sys.stderr)
+
+    # 트렌드 섹션: 색인된 그래프에서 카테고리 급증을 계산해 리포트 상단에 삽입
+    if cfg.neo4j_uri:
+        try:
+            report = _insert_trends(cfg, report)
+        except Exception as e:  # noqa: BLE001
+            print(f"[trend] 실패: {e}", file=sys.stderr)
+
     # 아카이브: reports/YYYY-MM-DD.md 저장 + 인덱스 재생성 (발송과 독립)
     if not args.no_archive:
         try:
@@ -204,13 +242,6 @@ def main() -> int:
             print(f"[archive] 저장: {path}")
         except Exception as e:  # noqa: BLE001
             print(f"[archive] 실패: {e}", file=sys.stderr)
-
-    # 지식 계층 색인 (선택): Qdrant/Neo4j가 설정돼 있으면 신규 항목을 적재
-    if not args.no_index and (cfg.qdrant_url or cfg.neo4j_uri):
-        try:
-            _index_knowledge(cfg, display_items)
-        except Exception as e:  # noqa: BLE001
-            print(f"[knowledge] 색인 실패: {e}", file=sys.stderr)
 
     sent = False
     if cfg.slack_webhook:
