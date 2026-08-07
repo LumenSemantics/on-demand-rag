@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
+import certifi
 from neo4j import Driver, GraphDatabase
 
 from ..collectors.base import Item
+
+# Windows 파이썬의 기본 SSL 컨텍스트에 CA가 비어 있어 Aura(neo4j+s) 인증서 검증이
+# "self-signed certificate in certificate chain"으로 실패하는 경우가 있다.
+# httpx가 쓰는 certifi CA 번들을 지정해 해결한다(이미 설정돼 있으면 존중).
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
 
 # Document 중심 온톨로지: Document-[FROM]->Source, -[HAS_CATEGORY]->Category, Author-[AUTHORED]->Document
 _MERGE = """
