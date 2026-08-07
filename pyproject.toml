@@ -16,8 +16,8 @@ dev = ["pytest>=8.0", "ruff>=0.6"]
 # Stage 2 — 지식 계층 (Qdrant Cloud + Neo4j Aura). 필요할 때만 설치:
 #   uv sync --extra knowledge
 knowledge = ["qdrant-client>=1.12", "neo4j>=5.14"]
-# Stage 2 — GraphRAG 검색 API + 웹 UI:  uv sync --extra api
-api = ["fastapi>=0.110", "uvicorn>=0.29", "qdrant-client>=1.12", "neo4j>=5.14"]
+# Stage 2/3 — GraphRAG 검색 API + 웹 UI (에이전트 포함):  uv sync --extra api
+api = ["fastapi>=0.110", "uvicorn>=0.29", "qdrant-client>=1.12", "neo4j>=5.14", "langgraph>=0.2"]
 # Stage 3 — LangGraph 리서치 에이전트:  uv sync --extra agent
 agent = ["langgraph>=0.2", "qdrant-client>=1.12", "neo4j>=5.14"]
 

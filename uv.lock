@@ -58,6 +58,7 @@ agent = [
 ]
 api = [
     { name = "fastapi" },
+    { name = "langgraph" },
     { name = "neo4j" },
     { name = "qdrant-client" },
     { name = "uvicorn" },
@@ -77,6 +78,7 @@ requires-dist = [
     { name = "feedparser", specifier = ">=6.0" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "langgraph", marker = "extra == 'agent'", specifier = ">=0.2" },
+    { name = "langgraph", marker = "extra == 'api'", specifier = ">=0.2" },
     { name = "neo4j", marker = "extra == 'agent'", specifier = ">=5.14" },
     { name = "neo4j", marker = "extra == 'api'", specifier = ">=5.14" },
     { name = "neo4j", marker = "extra == 'knowledge'", specifier = ">=5.14" },

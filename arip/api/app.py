@@ -68,6 +68,20 @@ def api_graph(q: str) -> dict:
     return {"nodes": nodes, "edges": edges}
 
 
+@app.get("/api/ask")
+def api_ask(q: str) -> dict:
+    """LangGraph 에이전트: 질문→하위질의→검색→그래프→인용 답변."""
+    from ..knowledge import agent as kb_agent
+
+    r = kb_agent.ask(_cfg, q)
+    return {
+        "question": q,
+        "queries": r.get("queries", []),
+        "answer": r.get("answer", ""),
+        "docs": r.get("docs", []),
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return _PAGE
@@ -97,6 +111,10 @@ _PAGE = """<!doctype html>
   .badge { background: #4f46e522; color: #6366f1; padding: 1px 7px; border-radius: 999px; }
   .score { font-variant-numeric: tabular-nums; }
   .empty { opacity: .6; }
+  .ask { background: #059669; }
+  .qtag { margin: 10px 0; display: flex; gap: 6px; flex-wrap: wrap; }
+  .atext { white-space: pre-wrap; padding: 14px; border: 1px solid #8883; border-radius: 8px;
+           background: #05966910; margin: 8px 0; }
 </style></head>
 <body>
   <h1>🔎 ARIP GraphRAG 검색</h1>
@@ -104,7 +122,9 @@ _PAGE = """<!doctype html>
   <div class="bar">
     <input id="q" placeholder="예: 효율적인 대형 언어모델 추론" autofocus>
     <button onclick="run()">검색</button>
+    <button class="ask" onclick="ask()">AI 질문</button>
   </div>
+  <div id="answer"></div>
   <div id="results"></div>
   <div id="related"></div>
   <h2 id="ghdr" style="display:none">🌐 지식 그래프 <span style="font-weight:400;opacity:.6;font-size:.8rem">(노드 클릭 → 그 주제로 재검색)</span></h2>
@@ -151,6 +171,20 @@ async function graph(q) {
       if (n && n.group !== "doc") { $("#q").value = n.label; run(); }
     });
   } catch (e) { /* 그래프 실패는 무시 */ }
+}
+async function ask() {
+  const q = $("#q").value.trim(); if (!q) return;
+  $("#results").innerHTML = ""; $("#related").innerHTML = ""; $("#ghdr").style.display = "none";
+  $("#graph").innerHTML = ""; $("#answer").innerHTML = "<p class='empty'>🤖 생각 중… (검색·그래프·답변)</p>";
+  try {
+    const d = await (await fetch("/api/ask?q=" + encodeURIComponent(q))).json();
+    const qtag = (d.queries || []).map(x => `<span class="badge">${x}</span>`).join(" ");
+    const srcs = (d.docs || []).map((r, i) =>
+      `<div class="item"><a href="${r.url}" target="_blank" rel="noopener">[${i + 1}] ${r.title}</a></div>`).join("");
+    $("#answer").innerHTML =
+      `<div class="qtag">🧭 ${qtag}</div><div class="atext"></div><h2>📚 근거</h2>${srcs}`;
+    $("#answer .atext").textContent = d.answer || "(답변 없음)";
+  } catch (e) { $("#answer").innerHTML = "<p class='empty'>오류: " + e + "</p>"; }
 }
 $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 </script>
