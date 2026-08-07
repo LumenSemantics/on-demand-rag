@@ -107,7 +107,7 @@ _PAGE = """<!doctype html>
   </div>
   <div id="results"></div>
   <div id="related"></div>
-  <h2 id="ghdr" style="display:none">🌐 지식 그래프 (문서·카테고리·저자·관련문서)</h2>
+  <h2 id="ghdr" style="display:none">🌐 지식 그래프 <span style="font-weight:400;opacity:.6;font-size:.8rem">(노드 클릭 → 그 주제로 재검색)</span></h2>
   <div id="graph" style="height:440px;border:1px solid #8883;border-radius:10px"></div>
 <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script>
@@ -140,11 +140,16 @@ async function graph(q) {
       doc: { color: "#4f46e5", shape: "box", font: { color: "#fff" } },
       category: { color: "#10b981" }, author: { color: "#f59e0b" }, related: { color: "#8b5cf6" }
     };
-    new vis.Network($("#graph"),
+    const net = new vis.Network($("#graph"),
       { nodes: new vis.DataSet(d.nodes), edges: new vis.DataSet(d.edges) },
       { groups, nodes: { shape: "dot", size: 14, font: { size: 12 } },
         edges: { color: "#8886", smooth: false }, physics: { stabilization: true },
         interaction: { hover: true } });
+    net.on("click", (params) => {          // 노드 클릭 → 그 라벨로 재검색(그래프 순회)
+      if (!params.nodes.length) return;
+      const n = d.nodes.find(x => x.id === params.nodes[0]);
+      if (n && n.group !== "doc") { $("#q").value = n.label; run(); }
+    });
   } catch (e) { /* 그래프 실패는 무시 */ }
 }
 $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
