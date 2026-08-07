@@ -64,6 +64,16 @@ def test_kakao_template_truncates_and_has_link():
     assert build_template("hi")["link"]["web_url"].startswith("http")
 
 
+def test_is_korean():
+    from arip.util import is_korean
+
+    assert is_korean("에이전트 도구 사용")
+    assert not is_korean("Agent tool use for planning")
+    assert is_korean("카카오, AI Agent 마켓 구축")  # 혼합이나 한글 다수
+    assert not is_korean("GPT-5 MMLU 95.2%")
+    assert not is_korean("")
+
+
 def test_slack_split_message():
     from arip.notify.slack import split_message
 

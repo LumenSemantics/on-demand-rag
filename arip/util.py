@@ -11,6 +11,18 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
+def is_korean(text: str, threshold: float = 0.3) -> bool:
+    """제목이 이미 한국어인지 대략 판정(글자 중 한글 비율 기준).
+
+    이미 한국어면 LLM 번역을 건너뛰어 호출을 아끼고 원문을 그대로 살린다.
+    """
+    letters = [c for c in (text or "") if c.isalpha()]
+    if not letters:
+        return False
+    hangul = sum(1 for c in letters if "가" <= c <= "힣")
+    return hangul / len(letters) >= threshold
+
+
 def http_get(url: str, *, retries: int = 3, backoff: float = 1.0, **kwargs) -> httpx.Response:
     """httpx.get + raise_for_status에 지수 백오프 재시도를 더한다.
 

@@ -38,9 +38,10 @@ def translate_titles_llm(
 ) -> None:
     """제목을 LLM으로 한국어 번역해 title_ko에 채운다. 실패 항목은 빈 값(원문 유지)."""
     from .summarize import llm
-    from .util import parallel_map
+    from .util import is_korean, parallel_map
 
-    items = list(items)
+    # 이미 한국어인 제목은 번역 불필요 → 원문 유지(title_ko 빈 값)하고 건너뜀
+    items = [it for it in items if it.title and not is_korean(it.title)]
     batches = [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
 
     def _do(batch: list[Item]) -> None:

@@ -13,7 +13,7 @@ from .notify import kakao, slack
 from .report.builder import build_digest, build_report
 from .store.dedup import SeenStore
 from .summarize import llm
-from .util import parallel_map
+from .util import is_korean, parallel_map
 
 
 def collect_all(cfg: Config) -> tuple[list[Item], list[str]]:
@@ -152,7 +152,9 @@ def main() -> int:
         and bool(cfg.llm_api_key)
     )
     if do_translate:
-        print(f"제목 번역 중… ({len(display_items)}건)")
+        n = sum(1 for it in display_items if it.title and not is_korean(it.title))
+        skipped = len(display_items) - n
+        print(f"제목 번역 중… ({n}건, 이미 한국어 {skipped}건 건너뜀)")
         translate.translate_titles_llm(display_items, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
 
     # 요약 (선택) — 실제 표시할 항목만
