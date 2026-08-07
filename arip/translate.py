@@ -38,11 +38,12 @@ def translate_titles_llm(
 ) -> None:
     """제목을 LLM으로 한국어 번역해 title_ko에 채운다. 실패 항목은 빈 값(원문 유지)."""
     from .summarize import llm
+    from .util import parallel_map
 
     items = list(items)
-    for start in range(0, len(items), batch_size):
-        batch = items[start : start + batch_size]
-        translations: list[str | None]
+    batches = [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
+
+    def _do(batch: list[Item]) -> None:
         try:
             raw = llm.complete(_build_prompt(batch), provider, api_key, model, max_tokens=2000)
             translations = _parse(raw, len(batch))
@@ -50,3 +51,5 @@ def translate_titles_llm(
             translations = [None] * len(batch)
         for it, ko in zip(batch, translations):
             it.title_ko = ko or ""
+
+    parallel_map(_do, batches, workers=4)

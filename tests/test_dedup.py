@@ -64,6 +64,14 @@ def test_kakao_template_truncates_and_has_link():
     assert build_template("hi")["link"]["web_url"].startswith("http")
 
 
+def test_parallel_map_order_and_empty():
+    from arip.util import parallel_map
+
+    assert parallel_map(lambda x: x * 2, [1, 2, 3, 4], workers=3) == [2, 4, 6, 8]
+    assert parallel_map(lambda x: x, [], workers=3) == []
+    assert parallel_map(lambda x: x + 1, [10], workers=4) == [11]
+
+
 def test_email_build_message_multi_recipients():
     from arip.notify.email import build_message
 

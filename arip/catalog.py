@@ -88,11 +88,12 @@ def classify_all_llm(
     """LLM으로 분류해 category를 채운다. 실패한 항목은 키워드 규칙으로 폴백."""
     # 지연 임포트로 순환 참조 회피
     from .summarize import llm
+    from .util import parallel_map
 
     items = list(items)
-    for start in range(0, len(items), batch_size):
-        batch = items[start : start + batch_size]
-        labels: list[str | None]
+    batches = [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
+
+    def _do(batch: list[Item]) -> None:
         try:
             raw = llm.complete(_build_llm_prompt(batch), provider, api_key, model, max_tokens=600)
             labels = _parse_llm_labels(raw, len(batch))
@@ -100,6 +101,8 @@ def classify_all_llm(
             labels = [None] * len(batch)
         for it, lab in zip(batch, labels):
             it.category = lab or classify(it)  # 미분류/실패 → 키워드
+
+    parallel_map(_do, batches, workers=4)
 
 
 def counts(items: Sequence[Item]) -> dict[str, int]:

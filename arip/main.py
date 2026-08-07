@@ -13,6 +13,7 @@ from .notify import kakao, slack
 from .report.builder import build_digest, build_report
 from .store.dedup import SeenStore
 from .summarize import llm
+from .util import parallel_map
 
 
 def collect_all(cfg: Config) -> tuple[list[Item], list[str]]:
@@ -159,9 +160,12 @@ def main() -> int:
     if do_summary:
         targets = display_items if args.limit_summary <= 0 else display_items[: args.limit_summary]
         print(f"요약 중… ({len(targets)}건, provider={cfg.llm_provider})")
-        for it in targets:
+
+        def _summarize(it: Item) -> None:
             if it.abstract:
                 it.summary = llm.summarize(it.abstract, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
+
+        parallel_map(_summarize, targets, workers=8)  # 순차 호출 → 동시 호출로 단축
 
     report = build_report(display_items, group_by=group_by)
 
