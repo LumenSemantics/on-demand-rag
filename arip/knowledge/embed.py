@@ -8,7 +8,7 @@ import httpx
 def embed_texts(texts: Sequence[str], provider: str, api_key: str, model: str) -> list[list[float]]:
     """텍스트들을 임베딩 벡터로 변환한다.
 
-    provider="gemini"  → Gemini text-embedding-004 (768차원), LLM 키 재사용
+    provider="gemini"  → Gemini gemini-embedding-001 (3072차원), LLM 키 재사용
     provider="openai"  → OpenAI text-embedding-3-small (1536차원)
     """
     texts = list(texts)
@@ -22,7 +22,7 @@ def embed_texts(texts: Sequence[str], provider: str, api_key: str, model: str) -
 
 
 def _gemini(text: str, api_key: str, model: str) -> list[float]:
-    m = model or "text-embedding-004"
+    m = model or "gemini-embedding-001"
     r = httpx.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{m}:embedContent",
         params={"key": api_key},

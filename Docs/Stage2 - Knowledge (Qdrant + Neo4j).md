@@ -2,7 +2,7 @@
 
 > 목표: 수집한 항목을 **저장하고 검색·질의**할 수 있게 한다.
 > Qdrant Cloud(벡터 유사도) + Neo4j Aura(관계 질의) **무료 티어**로 진행한다.
-> 임베딩은 이미 쓰는 **Gemini 키를 재사용**(text-embedding-004, 768차원)한다.
+> 임베딩은 이미 쓰는 **Gemini 키를 재사용**(gemini-embedding-001, 3072차원)한다.
 
 ---
 
@@ -61,7 +61,7 @@ NEO4J_PASSWORD=생성시_비밀번호
 
 # 임베딩 (Gemini 키 재사용 — LLM_API_KEY 그대로 사용)
 EMBED_PROVIDER=gemini
-EMBED_MODEL=text-embedding-004
+EMBED_MODEL=gemini-embedding-001
 ```
 
 자동 실행(GitHub Actions)에도 쓰려면 같은 값들을 **Secrets**에 추가.

@@ -73,5 +73,5 @@ def load_config(sources_file: str = "config/sources.yaml") -> Config:
         neo4j_user=os.getenv("NEO4J_USER", "neo4j").strip(),
         neo4j_password=os.getenv("NEO4J_PASSWORD", "").strip(),
         embed_provider=os.getenv("EMBED_PROVIDER", "gemini").strip().lower(),
-        embed_model=os.getenv("EMBED_MODEL", "text-embedding-004").strip(),
+        embed_model=os.getenv("EMBED_MODEL", "gemini-embedding-001").strip(),
     )
