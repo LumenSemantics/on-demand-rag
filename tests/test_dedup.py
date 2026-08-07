@@ -73,6 +73,22 @@ def test_email_build_message_multi_recipients():
     assert "From: me@example.com" in raw
 
 
+def test_translate_parse_and_render():
+    from arip.report.builder import build_report
+    from arip.translate import _parse
+
+    out = _parse("1. 에이전트 도구 사용\n2. 검색 증강 생성\n", 2)
+    assert out == ["에이전트 도구 사용", "검색 증강 생성"]
+    assert _parse("1. 하나만", 2)[1] is None  # 누락은 None
+
+    # title_ko가 있으면 렌더에 한국어 제목이 쓰인다
+    it = _mk("1", source="arxiv", title="Agent tool use")
+    it.title_ko = "에이전트 도구 사용"
+    report = build_report([it], group_by="source")
+    assert "에이전트 도구 사용" in report
+    assert "Agent tool use" not in report
+
+
 def test_parse_llm_labels():
     # "항목번호=카테고리번호" 파싱, 범위 밖(99)은 None 폴백
     out = _parse_llm_labels("1=1\n2=2\n3=99\n", 3)

@@ -4,7 +4,7 @@ import argparse
 import sys
 from datetime import datetime
 
-from . import archive, catalog, curate
+from . import archive, catalog, curate, translate
 from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
@@ -81,6 +81,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
     parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")
+    parser.add_argument("--no-translate", action="store_true", help="제목 한국어 번역 건너뜀")
     parser.add_argument("--group-by", choices=["category", "source"], default=None,
                         help="브리핑 묶음 기준 (기본: 설정 또는 category)")
     parser.add_argument("--classify", choices=["keyword", "llm"], default=None,
@@ -141,6 +142,17 @@ def main() -> int:
                 print("LLM 분류 요청됐으나 키 없음 → 키워드 분류로 대체", file=sys.stderr)
             catalog.classify_all(display_items)
         print(f"카탈로그 분포: {catalog.counts(display_items)}")
+
+    # 제목 한국어 번역 (선택, LLM 필요) — 고유명사·약어는 원문 유지
+    do_translate = (
+        not args.no_translate
+        and report_cfg.get("translate", True)
+        and bool(cfg.llm_provider)
+        and bool(cfg.llm_api_key)
+    )
+    if do_translate:
+        print(f"제목 번역 중… ({len(display_items)}건)")
+        translate.translate_titles_llm(display_items, cfg.llm_provider, cfg.llm_api_key, cfg.llm_model)
 
     # 요약 (선택) — 실제 표시할 항목만
     do_summary = (not args.no_summary) and bool(cfg.llm_provider) and bool(cfg.llm_api_key)

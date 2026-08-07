@@ -61,7 +61,8 @@ def _source_tag(source: str) -> str:
 def _render_item(it: Item, with_source_tag: bool = False) -> list[str]:
     out: list[str] = []
     tag = f" · {_source_tag(it.source)}" if with_source_tag else ""
-    line = f"- [{it.title}]({it.url}){tag}"
+    title = it.title_ko or it.title  # 번역이 있으면 한국어 제목 우선
+    line = f"- [{title}]({it.url}){tag}"
     if it.extra:
         line += f"  {it.extra}"
     out.append(line)

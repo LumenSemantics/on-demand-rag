@@ -11,6 +11,7 @@ class Item:
     source: str  # "arxiv", "huggingface", "rss:The Batch" ...
     title: str
     url: str
+    title_ko: str = ""  # LLM이 번역한 한국어 제목 (있으면 원문 대신 표시)
     abstract: str = ""
     authors: list[str] = field(default_factory=list)
     published: str = ""

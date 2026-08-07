@@ -8,6 +8,7 @@
 report:
   group_by: category
   classify: llm
+  translate: true   # 제목을 한국어로 번역(LLM 키 필요). 원문 유지하려면 false
 
 # 볼륨 조절: 키워드 필터 + 소스별 상한 (제목+초록 기준, 대소문자 무시)
 filter:
