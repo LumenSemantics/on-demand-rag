@@ -117,6 +117,8 @@ def _cmd_ask(cfg: Config, question: str) -> int:
 
     print(f"❓ {question}\n")
     r = kb_agent.ask(cfg, question)
+    if r.get("queries"):
+        print("🧭 하위 질의: " + " · ".join(r["queries"]) + "\n")
     print("💡 답변\n" + r["answer"] + "\n")
     print("── 근거 문서 ──")
     for i, d in enumerate(r["docs"], 1):
