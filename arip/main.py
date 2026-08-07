@@ -95,8 +95,12 @@ def _index_knowledge(cfg: Config, items: list[Item]) -> None:
         drv.close()
 
 
+_TREND_SURGE = 3.0  # 급상승으로 볼 배율 임계치
+_TREND_MIN = 3      # 급상승으로 볼 최소 최근 건수
+
+
 def _insert_trends(cfg: Config, report: str) -> str:
-    """색인된 그래프의 카테고리 급증을 리포트 첫 섹션 앞에 삽입."""
+    """색인된 그래프의 카테고리 급증을 리포트 첫 섹션 앞에 삽입(임계치 초과는 🚨)."""
     from .knowledge import graph as kb_graph
     from .knowledge import trends as kb_trends
 
@@ -105,13 +109,23 @@ def _insert_trends(cfg: Config, report: str) -> str:
         docs = kb_trends.fetch_docs(drv)
     finally:
         drv.close()
-    rows = kb_trends.category_trends(docs, days=7)[:5]
+    rows = kb_trends.category_trends(docs, days=7)
     if not rows:
         return report
-    lines = ["## 📈 트렌드 (최근 7일 급증)"]
-    for r in rows:
-        s = "∞" if r["surge"] == float("inf") else f"{r['surge']:.1f}x"
-        lines.append(f"- {r['category']}: {r['recent']}건 ({s})")
+
+    def fmt(s: float) -> str:
+        return "∞" if s == float("inf") else f"{s:.1f}x"
+
+    def hot(r: dict) -> bool:
+        return r["surge"] >= _TREND_SURGE and r["recent"] >= _TREND_MIN
+
+    surging = [r for r in rows if hot(r)]
+    lines = ["## 📈 트렌드 (최근 7일)"]
+    if surging:
+        lines.append("**🚨 급상승:** " + ", ".join(f"{r['category']} {fmt(r['surge'])}" for r in surging[:5]))
+    for r in rows[:5]:
+        mark = "🚨 " if hot(r) else ""
+        lines.append(f"- {mark}{r['category']}: {r['recent']}건 ({fmt(r['surge'])})")
     section = "\n".join(lines) + "\n\n"
     idx = report.find("\n## ")
     if idx == -1:
