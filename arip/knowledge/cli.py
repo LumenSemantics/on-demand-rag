@@ -155,6 +155,77 @@ def _cmd_eval(cfg: Config, n: int) -> int:
     return 0
 
 
+def _cmd_weekly(cfg: Config, days: int, send: bool) -> int:
+    """최근 days일 롤업 다이제스트: 급상승·카테고리 분포·키워드. 저장 + 선택 발송."""
+    import pathlib
+    from collections import Counter
+    from datetime import timedelta
+
+    from ..notify import email as email_notify
+    from ..notify import kakao, slack
+    from . import trends as kb_trends
+
+    drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+    docs = kb_trends.fetch_docs(drv)
+    drv.close()
+    dates = [d for _, d, _ in docs if d]
+    if not dates:
+        print("주간 데이터 없음")
+        return 0
+    today = max(dates)
+    start = today - timedelta(days=days - 1)
+    recent = [(c, d, t) for c, d, t in docs if d and d >= start]
+    dist = Counter(c for c, _, _ in recent if c)
+    rows = kb_trends.category_trends(docs, days=days)
+    terms = kb_trends.top_terms(docs, days=days)
+
+    def fmt(s: float) -> str:
+        return "∞" if s == float("inf") else f"{s:.1f}x"
+
+    md = [f"# 📅 AI 주간 다이제스트 ({today}, 최근 {days}일)", "", f"**총 {len(recent)}건**", ""]
+    surging = [r for r in rows if r["surge"] >= 3 and r["recent"] >= 3]
+    if surging:
+        md.append("## 🚨 급상승")
+        md += [f"- {r['category']}: {r['recent']}건 ({fmt(r['surge'])})" for r in surging[:6]]
+        md.append("")
+    md.append("## 📊 카테고리 분포")
+    md += [f"- {c}: {n}건" for c, n in dist.most_common()]
+    md += ["", "## 🔑 키워드", ", ".join(f"{w}({n})" for w, n in terms)]
+    report = "\n".join(md) + "\n"
+    print(report)
+
+    p = pathlib.Path(cfg.archive_dir) / f"weekly-{today}.md"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(report, encoding="utf-8")
+    print(f"[archive] {p}")
+
+    if send:
+        if cfg.slack_webhook:
+            try:
+                slack.send(cfg.slack_webhook, report)
+                print("[slack] 발송")
+            except Exception as e:  # noqa: BLE001
+                print(f"[slack] 실패: {e}")
+        if cfg.smtp_host and cfg.email_to:
+            try:
+                email_notify.send(cfg.smtp_host, cfg.smtp_port, cfg.smtp_user, cfg.smtp_password,
+                                  cfg.email_to, "AI 주간 다이제스트", report)
+                print("[email] 발송")
+            except Exception as e:  # noqa: BLE001
+                print(f"[email] 실패: {e}")
+        if cfg.kakao_rest_api_key and cfg.kakao_refresh_token:
+            short = f"📅 AI 주간 다이제스트\n총 {len(recent)}건\n" + "\n".join(
+                f"{c} {n}" for c, n in dist.most_common()[:8]
+            )
+            try:
+                kakao.send(cfg.kakao_rest_api_key, cfg.kakao_refresh_token, short,
+                           cfg.report_base_url or "https://github.com/LumenSemantics/on-demand-rag")
+                print("[kakao] 발송")
+            except Exception as e:  # noqa: BLE001
+                print(f"[kakao] 실패: {e}")
+    return 0
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
@@ -174,6 +245,9 @@ def main() -> int:
     pa.add_argument("question")
     pe = sub.add_parser("eval", help="검색 품질 평가(recall@k·MRR)")
     pe.add_argument("--n", type=int, default=20)
+    pw = sub.add_parser("weekly", help="주간 다이제스트 생성·저장·발송")
+    pw.add_argument("--days", type=int, default=7)
+    pw.add_argument("--send", action="store_true", help="Slack/Email/카카오로 발송")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -191,6 +265,8 @@ def main() -> int:
         return _cmd_ask(cfg, args.question)
     if args.cmd == "eval":
         return _cmd_eval(cfg, args.n)
+    if args.cmd == "weekly":
+        return _cmd_weekly(cfg, args.days, args.send)
     return 1
 
 
