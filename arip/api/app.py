@@ -10,6 +10,12 @@ app = FastAPI(title="ARIP GraphRAG")
 _cfg = load_config()
 
 
+@app.get("/healthz")
+def healthz() -> dict:
+    """가벼운 헬스체크(외부 호출 없음). Cloud Run 프로브용."""
+    return {"status": "ok"}
+
+
 @app.get("/api/search")
 def api_search(q: str, limit: int = 8) -> dict:
     """벡터 유사도 검색 + 상위 문서의 그래프 관련 문서(GraphRAG)."""
@@ -235,14 +241,19 @@ $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 
 
 def main() -> None:
-    """웹 UI 서버 실행: uv run arip-api [--host H] [--port P]"""
+    """웹 UI 서버 실행: uv run arip-api [--host H] [--port P]
+
+    Cloud Run 등 컨테이너 환경에서는 인자 없이 실행하면 HOST/PORT 환경변수를
+    따른다(Cloud Run은 PORT를 주입한다). 컨테이너에서는 HOST=0.0.0.0 로 둔다.
+    """
     import argparse
+    import os
 
     import uvicorn
 
     p = argparse.ArgumentParser(prog="arip-api", description="ARIP GraphRAG 웹 UI 서버")
-    p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    p.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     a = p.parse_args()
     print(f"ARIP 웹 UI → http://{a.host}:{a.port}  (종료: Ctrl+C)")
     uvicorn.run(app, host=a.host, port=a.port)

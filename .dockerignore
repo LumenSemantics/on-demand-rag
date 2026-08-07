@@ -1,0 +1,16 @@
+# 컨테이너 이미지에 넣지 않을 것들
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+data/
+reports/
+Docs/
+tests/
+.env
+.env.*
+*.md
+!README.md
+.ruff_cache/
+.pytest_cache/
