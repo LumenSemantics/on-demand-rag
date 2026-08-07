@@ -1,12 +1,12 @@
-# Cloud Run 배포 가이드 (ARIP 웹 UI)
+# Cloud Run 배포 가이드 (AIRP 웹 UI)
 
-ARIP GraphRAG 웹 UI(`arip-api`)를 Google Cloud Run에 올리는 방법입니다.
+AIRP GraphRAG 웹 UI(`airp-api`)를 Google Cloud Run에 올리는 방법입니다.
 
 ## 왜 가능한가 (검증됨)
 
 - 웹 서비스는 모든 설정을 **환경변수**(`os.getenv`)로 읽음 → Cloud Run이 주입/시크릿으로 공급 가능
 - 데이터는 **Qdrant Cloud · Neo4j Aura · Gemini** 를 HTTP로 조회 → 컨테이너에 로컬 상태 불필요(**stateless**)
-- `arip-api` 는 `PORT` 환경변수를 따라 `0.0.0.0:$PORT` 바인딩 → Cloud Run 포트 규약 충족 (로컬 검증 완료: `PORT=9091` → 9091 바인딩, `/healthz` → `{"status":"ok"}`)
+- `airp-api` 는 `PORT` 환경변수를 따라 `0.0.0.0:$PORT` 바인딩 → Cloud Run 포트 규약 충족 (로컬 검증 완료: `PORT=9091` → 9091 바인딩, `/healthz` → `{"status":"ok"}`)
 - 크롤링·SQLite(`seen.db`)·Slack/이메일/카카오는 **웹 서비스와 분리** → 배포 대상 아님(그건 GitHub Actions에서 계속 수행)
 
 ## 필요한 것
@@ -35,26 +35,26 @@ bash deploy/cloudrun.sh
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com secretmanager.googleapis.com
 
-printf '%s' "$LLM_API_KEY"    | gcloud secrets create arip-llm-api-key    --data-file=-
-printf '%s' "$QDRANT_API_KEY" | gcloud secrets create arip-qdrant-api-key --data-file=-
-printf '%s' "$NEO4J_PASSWORD" | gcloud secrets create arip-neo4j-password --data-file=-
+printf '%s' "$LLM_API_KEY"    | gcloud secrets create airp-llm-api-key    --data-file=-
+printf '%s' "$QDRANT_API_KEY" | gcloud secrets create airp-qdrant-api-key --data-file=-
+printf '%s' "$NEO4J_PASSWORD" | gcloud secrets create airp-neo4j-password --data-file=-
 
-gcloud run deploy arip-api \
+gcloud run deploy airp-api \
   --source . \
   --region asia-northeast3 \
   --allow-unauthenticated \
   --cpu 1 --memory 512Mi --timeout 120 --min-instances 0 \
   --set-env-vars "LLM_PROVIDER=gemini,LLM_MODEL=gemini-flash-lite-latest,EMBED_PROVIDER=gemini,EMBED_MODEL=gemini-embedding-001,QDRANT_URL=<...>,NEO4J_URI=<...>,NEO4J_USER=neo4j" \
-  --set-secrets "LLM_API_KEY=arip-llm-api-key:latest,QDRANT_API_KEY=arip-qdrant-api-key:latest,NEO4J_PASSWORD=arip-neo4j-password:latest"
+  --set-secrets "LLM_API_KEY=airp-llm-api-key:latest,QDRANT_API_KEY=airp-qdrant-api-key:latest,NEO4J_PASSWORD=airp-neo4j-password:latest"
 ```
 
-배포가 끝나면 `https://arip-api-xxxxx-du.a.run.app` 형태의 **공개 URL**이 출력됩니다.
+배포가 끝나면 `https://airp-api-xxxxx-du.a.run.app` 형태의 **공개 URL**이 출력됩니다.
 
 ## ⚠️ 접근 제어 (중요)
 
 - `--allow-unauthenticated` 는 URL을 **전 세계 공개**로 만듭니다. 누구나 접속 시 Gemini/Qdrant/Neo4j를 호출(비용·데이터 노출).
 - 개인용이면 다음 중 하나를 권장:
-  - **비공개 유지**: `--no-allow-unauthenticated` 로 배포 → 접근 시 `gcloud run services proxy arip-api --region asia-northeast3` 로 로컬 프록시 터널
+  - **비공개 유지**: `--no-allow-unauthenticated` 로 배포 → 접근 시 `gcloud run services proxy airp-api --region asia-northeast3` 로 로컬 프록시 터널
   - 공개하되 앞단에 인증(예: IAP, 간단한 토큰 검사) 추가
 
 ## 비용 개요
@@ -69,4 +69,4 @@ gcloud run deploy arip-api \
 
 ## 크롤링 파이프라인은?
 
-데일리 브리핑 수집·색인(`arip`, `arip-kb index`)은 **GitHub Actions 크론**에서 계속 돌리는 걸 권장합니다. 굳이 Cloud Run에서 주기 실행하려면 **Cloud Run Jobs + Cloud Scheduler** 로 분리 구성해야 합니다(웹 서비스와 별개).
+데일리 브리핑 수집·색인(`airp`, `airp-kb index`)은 **GitHub Actions 크론**에서 계속 돌리는 걸 권장합니다. 굳이 Cloud Run에서 주기 실행하려면 **Cloud Run Jobs + Cloud Scheduler** 로 분리 구성해야 합니다(웹 서비스와 별개).

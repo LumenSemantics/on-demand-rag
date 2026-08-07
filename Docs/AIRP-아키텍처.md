@@ -22,7 +22,7 @@ flowchart TB
     A2["HuggingFace Papers"]
     A3["RSS 피드"]
   end
-  subgraph BATCH["일일 배치 · GitHub Actions · KST 07:00 · arip"]
+  subgraph BATCH["일일 배치 · GitHub Actions · KST 07:00 · airp"]
     direction TB
     B1["수집 · 필터 · 중복제거 (seen.db)"]
     B2["번역 · 요약 · 분류"]
@@ -73,7 +73,7 @@ flowchart TB
 
 ## FIG.2 — 데이터 흐름 ① 쓰기 경로 (BATCH)
 
-매일 07:00(KST) GitHub Actions가 `arip`를 실행.
+매일 07:00(KST) GitHub Actions가 `airp`를 실행.
 
 ```mermaid
 flowchart LR
@@ -123,7 +123,7 @@ flowchart LR
 | 레이어 | 구성요소 | 역할 |
 |---|---|---|
 | 수집원 | arXiv · HuggingFace · RSS | 연구 논문·기사 원천 |
-| 배치 | GitHub Actions · `arip` | 수집→가공→색인→아카이브→알림 (쓰기) |
+| 배치 | GitHub Actions · `airp` | 수집→가공→색인→아카이브→알림 (쓰기) |
 | LLM | Gemini API | 번역·요약·분류·질의응답 + 임베딩 |
 | 지식계층 | Qdrant Cloud · Neo4j Aura | 벡터 검색 + 지식 그래프 (공유 저장소) |
 | 알림 | Slack · Email · KakaoTalk | 일일 브리핑 발송 |

@@ -1,7 +1,7 @@
 [project]
-name = "arip"
+name = "airp"
 version = "0.1.0"
-description = "ARIP Stage 1 MVP — AI research crawl & notify"
+description = "AIRP Stage 1 MVP — AI research crawl & notify"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -22,16 +22,16 @@ api = ["fastapi>=0.110", "uvicorn>=0.29", "qdrant-client>=1.12", "neo4j>=5.14", 
 agent = ["langgraph>=0.2", "qdrant-client>=1.12", "neo4j>=5.14"]
 
 [project.scripts]
-arip = "arip.main:main"
-arip-kb = "arip.knowledge.cli:main"
-arip-api = "arip.api.app:main"
+airp = "airp.main:main"
+airp-kb = "airp.knowledge.cli:main"
+airp-api = "airp.api.app:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["arip"]
+packages = ["airp"]
 
 [tool.ruff]
 line-length = 120
@@ -42,6 +42,6 @@ select = ["E", "F", "I", "W"]
 
 [tool.ruff.lint.per-file-ignores]
 # 카테고리 규칙은 한 줄 정규식 테이블이라 줄길이 예외
-"arip/catalog.py" = ["E501"]
+"airp/catalog.py" = ["E501"]
 # 임베디드 HTML 템플릿이 있어 줄길이 예외
-"arip/api/app.py" = ["E501"]
+"airp/api/app.py" = ["E501"]

@@ -1,4 +1,4 @@
-from arip.collectors.rss import _clean
+from airp.collectors.rss import _clean
 
 
 def test_clean_strips_html_tags_and_entities():

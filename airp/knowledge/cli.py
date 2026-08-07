@@ -228,7 +228,7 @@ def _cmd_weekly(cfg: Config, days: int, send: bool) -> int:
 
 def main() -> int:
     _force_utf8_stdout()
-    parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
+    parser = argparse.ArgumentParser(prog="airp-kb", description="AIRP Stage 2 — 지식 계층(벡터/그래프)")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("check", help="임베딩·Qdrant·Neo4j 연결 점검")
     pi = sub.add_parser("index", help="수집 항목을 벡터/그래프에 색인")

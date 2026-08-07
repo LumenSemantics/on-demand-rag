@@ -2,13 +2,13 @@ import os
 import tempfile
 from datetime import datetime
 
-from arip.archive import rebuild_index, write_report
-from arip.catalog import CATEGORY_ORDER, _parse_llm_labels, classify
-from arip.collectors.base import Item
-from arip.curate import keyword_filter, sort_and_cap
-from arip.notify.kakao import build_template
-from arip.report.builder import build_digest, build_report
-from arip.store.dedup import SeenStore
+from airp.archive import rebuild_index, write_report
+from airp.catalog import CATEGORY_ORDER, _parse_llm_labels, classify
+from airp.collectors.base import Item
+from airp.curate import keyword_filter, sort_and_cap
+from airp.notify.kakao import build_template
+from airp.report.builder import build_digest, build_report
+from airp.store.dedup import SeenStore
 
 
 def _mk(id, source="arxiv", title="T", abstract="", score=0):
@@ -44,7 +44,7 @@ def test_build_digest_has_counts():
         _mk("1", source="arxiv", title="LLM agent tool use"),
         _mk("2", source="huggingface", title="Retrieval augmented generation"),
     ]
-    from arip.catalog import classify_all
+    from airp.catalog import classify_all
 
     classify_all(items)
     digest = build_digest(items, group_by="category")
@@ -65,7 +65,7 @@ def test_kakao_template_truncates_and_has_link():
 
 
 def test_is_korean():
-    from arip.util import is_korean
+    from airp.util import is_korean
 
     assert is_korean("에이전트 도구 사용")
     assert not is_korean("Agent tool use for planning")
@@ -75,7 +75,7 @@ def test_is_korean():
 
 
 def test_slack_split_message():
-    from arip.notify.slack import split_message
+    from airp.notify.slack import split_message
 
     # 한도 이하면 그대로 1개
     assert split_message("짧은 메시지", limit=100) == ["짧은 메시지"]
@@ -91,7 +91,7 @@ def test_slack_split_message():
 def test_http_get_retries_then_succeeds(monkeypatch):
     import httpx
 
-    from arip import util
+    from airp import util
 
     calls = {"n": 0}
 
@@ -113,7 +113,7 @@ def test_http_get_retries_then_succeeds(monkeypatch):
 
 
 def test_parallel_map_order_and_empty():
-    from arip.util import parallel_map
+    from airp.util import parallel_map
 
     assert parallel_map(lambda x: x * 2, [1, 2, 3, 4], workers=3) == [2, 4, 6, 8]
     assert parallel_map(lambda x: x, [], workers=3) == []
@@ -121,7 +121,7 @@ def test_parallel_map_order_and_empty():
 
 
 def test_email_build_message_multi_recipients():
-    from arip.notify.email import build_message
+    from airp.notify.email import build_message
 
     recipients, raw = build_message("me@example.com", "a@x.com, b@y.com , ", "제목", "본문")
     assert recipients == ["a@x.com", "b@y.com"]  # 공백·빈 항목 정리
@@ -130,8 +130,8 @@ def test_email_build_message_multi_recipients():
 
 
 def test_translate_parse_and_render():
-    from arip.report.builder import build_report
-    from arip.translate import _parse
+    from airp.report.builder import build_report
+    from airp.translate import _parse
 
     out = _parse("1. 에이전트 도구 사용\n2. 검색 증강 생성\n", 2)
     assert out == ["에이전트 도구 사용", "검색 증강 생성"]

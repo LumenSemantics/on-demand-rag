@@ -99,14 +99,14 @@ DB라고 부를 만한 건 **SQLite(`seen.db`)** 하나뿐입니다. 그마저�
 ## 5. 폴더 구조
 
 ```
-arip/
+airp/
 ├── README.md
 ├── pyproject.toml
 ├── .env.example
 ├── .gitignore
 ├── config/
 │   └── sources.yaml          # 크롤링할 소스 목록
-├── src/arip/
+├── src/airp/
 │   ├── __init__.py
 │   ├── main.py               # 진입점: 수집→중복제거→요약→리포트→알림
 │   ├── config.py             # .env / yaml 로드
@@ -186,7 +186,7 @@ rss:
 
 **A. 서버/PC에 cron (매일 07:00)**
 ```bash
-0 7 * * * cd /path/to/arip && uv run python -m arip.main >> data/run.log 2>&1
+0 7 * * * cd /path/to/airp && uv run python -m airp.main >> data/run.log 2>&1
 ```
 
 **B. GitHub Actions (서버 없이)** — 실제 워크플로가 [`.github/workflows/daily.yml`](../.github/workflows/daily.yml)에 있음.
@@ -243,7 +243,7 @@ cp .env.example .env    # 값 채우기
 # config/sources.yaml 확인
 
 # 3. 1회 실행 (테스트)
-uv run python -m arip.main
+uv run python -m airp.main
 
 # 4. 스케줄 등록 (cron 또는 GitHub Actions)
 ```
@@ -252,7 +252,7 @@ uv run python -m arip.main
 
 ## 12. 완료 기준 (Exit Criteria) — 이걸 만족하면 1단계 끝
 
-- [ ] `uv run python -m arip.main` 실행 시 arXiv 신규 논문이 Slack으로 온다
+- [ ] `uv run python -m airp.main` 실행 시 arXiv 신규 논문이 Slack으로 온다
 - [ ] 같은 명령을 두 번 실행해도 중복 항목이 다시 오지 않는다 (dedup 동작)
 - [ ] cron 또는 GitHub Actions로 매일 자동 실행된다
 - [ ] LLM 키 없이도(요약 생략 모드) 정상 동작한다

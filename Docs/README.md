@@ -1,8 +1,8 @@
-# 📚 ARIP 문서
+# 📚 AIRP 문서
 
 | 문서 | 내용 |
 |---|---|
-| [ARIP 프로젝트 개요](ARIP%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B0%9C%EC%9A%94.md) | 비전·아키텍처·데이터 소스·기술 스택·로드맵·개발 원칙 — **여기서 시작** |
+| [AIRP 프로젝트 개요](AIRP%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B0%9C%EC%9A%94.md) | 비전·아키텍처·데이터 소스·기술 스택·로드맵·개발 원칙 — **여기서 시작** |
 | [Stage 1 MVP 스펙](Stage1%20MVP%20-%20Crawl%20and%20Notify.md) | 현재 구현 단계(수집→알림) 상세 스펙 |
 | [Stage 2 — Knowledge (Qdrant + Neo4j)](Stage2%20-%20Knowledge%20%28Qdrant%20%2B%20Neo4j%29.md) | 벡터 검색·지식 그래프 설계 + 클라우드 설정 |
 | [데이터 모델 (ERD)](ERD.md) | 현재/제안 스키마 |

@@ -135,7 +135,7 @@ def _insert_trends(cfg: Config, report: str) -> str:
 
 def main() -> int:
     _force_utf8_stdout()
-    parser = argparse.ArgumentParser(description="ARIP Stage 1 — Crawl & Notify")
+    parser = argparse.ArgumentParser(description="AIRP Stage 1 — Crawl & Notify")
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
     parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")

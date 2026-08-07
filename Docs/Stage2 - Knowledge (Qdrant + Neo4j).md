@@ -13,7 +13,7 @@ flowchart LR
     C["수집 항목 (Item)"] --> E["임베딩 (Gemini)"]
     E --> Q["Qdrant Cloud<br/>벡터 검색"]
     C --> G["Neo4j Aura<br/>Document·Source·Author·Category"]
-    Q --> S["arip-kb search<br/>유사 문서"]
+    Q --> S["airp-kb search<br/>유사 문서"]
     G --> R["관계 질의<br/>(Cypher)"]
 ```
 
@@ -72,7 +72,7 @@ EMBED_MODEL=gemini-embedding-001
 
 ```bash
 uv sync --extra knowledge   # qdrant-client, neo4j 설치
-uv run arip-kb check        # 임베딩·Qdrant·Neo4j 연결 각각 점검
+uv run airp-kb check        # 임베딩·Qdrant·Neo4j 연결 각각 점검
 ```
 `[embed] OK / [qdrant] OK / [neo4j] OK` 가 모두 뜨면 준비 완료.
 
@@ -82,22 +82,22 @@ uv run arip-kb check        # 임베딩·Qdrant·Neo4j 연결 각각 점검
 
 ```bash
 # 오늘 수집분을 벡터+그래프에 색인 (테스트는 --limit로 소량)
-uv run arip-kb index --limit 30
+uv run airp-kb index --limit 30
 
 # 벡터 유사도 검색
-uv run arip-kb search "효율적인 MoE 대형 언어모델"
+uv run airp-kb search "효율적인 MoE 대형 언어모델"
 
 # GraphRAG: 벡터 검색 + 그래프 관련 문서(카테고리·저자 공유)
-uv run arip-kb related "에이전트 강화학습"
+uv run airp-kb related "에이전트 강화학습"
 ```
 
 ### 자동 색인 (데일리 브리핑)
-`arip` 실행 시 신규 항목이 **자동으로 Qdrant/Neo4j에 색인**됩니다(설정돼 있을 때만). 끄려면 `--no-index`.
+`airp` 실행 시 신규 항목이 **자동으로 Qdrant/Neo4j에 색인**됩니다(설정돼 있을 때만). 끄려면 `--no-index`.
 
 ### GraphRAG 웹 UI
 ```bash
 uv sync --extra api
-uv run arip-api        # → http://127.0.0.1:8000 (검색창 + 관련 문서 시각화)
+uv run airp-api        # → http://127.0.0.1:8000 (검색창 + 관련 문서 시각화)
 ```
 
 ### GitHub Actions 자동 색인
@@ -134,5 +134,5 @@ Stage 3에서 Model·Benchmark·Lab·Concept 노드로 온톨로지를 확장한
 
 이 프로젝트가 **OneDrive 폴더 안**에 있으면, OneDrive가 `.venv`를 동기화하며 파일을 잠가 `uv sync`가 간헐적으로 실패할 수 있습니다. 해결책:
 - (권장) 프로젝트를 OneDrive 밖으로 이동 (예: `C:\dev\on-demand-rag`)
-- 또는 venv를 밖에 두기: 환경변수 `UV_PROJECT_ENVIRONMENT=C:\Users\<계정>\AppData\Local\arip-venv` 설정 후 `uv sync`
+- 또는 venv를 밖에 두기: 환경변수 `UV_PROJECT_ENVIRONMENT=C:\Users\<계정>\AppData\Local\airp-venv` 설정 후 `uv sync`
 - 또는 설치 중 OneDrive 동기화 일시정지

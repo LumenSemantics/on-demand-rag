@@ -1,4 +1,4 @@
-# ARIP — AI Research Intelligence Platform 프로젝트 개요
+# AIRP — AI Research Intelligence Platform 프로젝트 개요
 
 > 이 문서는 흩어져 있던 기획·아키텍처·로드맵·소스 문서를 **하나로 통합한 기준 문서**입니다.
 > 세부 실행 문서는 [Stage 1 MVP 스펙](Stage1%20MVP%20-%20Crawl%20and%20Notify.md), [데이터 모델(ERD)](ERD.md),
@@ -133,7 +133,7 @@ Stage 1 상세는 [Stage 1 MVP 스펙](Stage1%20MVP%20-%20Crawl%20and%20Notify.m
 
 | 문서 | 내용 |
 |---|---|
-| **ARIP 프로젝트 개요** (이 문서) | 비전·아키텍처·소스·스택·로드맵 통합 |
+| **AIRP 프로젝트 개요** (이 문서) | 비전·아키텍처·소스·스택·로드맵 통합 |
 | [Stage 1 MVP 스펙](Stage1%20MVP%20-%20Crawl%20and%20Notify.md) | 현재 구현 단계의 상세 스펙 |
 | [데이터 모델(ERD)](ERD.md) | 현재/제안 스키마 |
 | [카카오톡 연동 플로우](%EC%B9%B4%EC%B9%B4%EC%98%A4%ED%86%A1%20%EC%97%B0%EB%8F%99%20%ED%94%8C%EB%A1%9C%EC%9A%B0.md) | 알림 채널 연동 절차 |

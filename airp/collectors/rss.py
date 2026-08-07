@@ -9,7 +9,7 @@ from ..util import http_get
 from .base import Item
 
 # 일부 피드는 기본 urllib User-Agent를 차단하므로 브라우저 형태 UA로 요청.
-_UA = "Mozilla/5.0 (compatible; ARIP/0.1; +https://github.com/LumenSemantics/on-demand-rag)"
+_UA = "Mozilla/5.0 (compatible; AIRP/0.1; +https://github.com/LumenSemantics/on-demand-rag)"
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _SPACE_BEFORE_PUNCT = re.compile(r"\s+([.,;:!?])")
