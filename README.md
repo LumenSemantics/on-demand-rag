@@ -22,8 +22,7 @@ AI 연구 동향(논문·모델·블로그·정책)을 자동 수집하고, 지�
 | 4 | Application | 웹에서 본다 | Next.js 대시보드 · MCP 서버 | ⬜ 예정 |
 | 5 | Enterprise | 다중 사용자·운영 | K8s · 인증 · 멀티테넌트 · 모니터링 | ⬜ 예정 |
 
-자세한 기획·아키텍처 문서는 [`Docs/`](Docs) 참고.
-Stage 1 상세 스펙: [`Docs/Stage1 MVP - Crawl and Notify.md`](Docs/Stage1%20MVP%20-%20Crawl%20and%20Notify.md)
+📚 문서: **[프로젝트 개요](Docs/ARIP%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B0%9C%EC%9A%94.md)** (비전·아키텍처·소스·스택·로드맵) · [Stage 1 스펙](Docs/Stage1%20MVP%20-%20Crawl%20and%20Notify.md) · [ERD](Docs/ERD.md) · [문서 색인](Docs)
 
 ---
 
