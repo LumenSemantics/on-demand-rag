@@ -15,7 +15,9 @@ def embed_texts(texts: Sequence[str], provider: str, api_key: str, model: str) -
     if not texts:
         return []
     if provider == "gemini":
-        return [_gemini(t, api_key, model) for t in texts]
+        from ..util import parallel_map  # 항목별 호출을 동시에 처리해 단축
+
+        return parallel_map(lambda t: _gemini(t, api_key, model), texts, workers=8)
     if provider == "openai":
         return _openai(texts, api_key, model)
     raise ValueError(f"지원하지 않는 EMBED_PROVIDER: {provider!r}")

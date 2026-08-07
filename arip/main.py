@@ -76,12 +76,32 @@ def _force_utf8_stdout() -> None:
                 pass
 
 
+def _index_knowledge(cfg: Config, items: list[Item]) -> None:
+    """신규 항목을 Qdrant(벡터)·Neo4j(그래프)에 색인. 설정된 것만 처리(지연 import)."""
+    from .knowledge import embed as kb_embed
+    from .knowledge import graph as kb_graph
+    from .knowledge import store as kb_store
+
+    if cfg.qdrant_url and cfg.llm_api_key:
+        texts = [f"{it.title}\n{it.abstract}".strip() for it in items]
+        vecs = kb_embed.embed_texts(texts, cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)
+        qc = kb_store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+        kb_store.ensure_collection(qc, len(vecs[0]))
+        print(f"[knowledge] Qdrant 색인 {kb_store.index(qc, items, vecs)}건")
+    if cfg.neo4j_uri:
+        drv = kb_graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+        kb_graph.ensure_constraints(drv)
+        print(f"[knowledge] Neo4j 색인 {kb_graph.index(drv, items)}건")
+        drv.close()
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(description="ARIP Stage 1 — Crawl & Notify")
     parser.add_argument("--dry-run", action="store_true", help="알림 발송 없이 콘솔 출력만 (seen 기록 안 함)")
     parser.add_argument("--no-summary", action="store_true", help="LLM 요약 건너뜀")
     parser.add_argument("--no-archive", action="store_true", help="reports/ 아카이브 저장 건너뜀")
+    parser.add_argument("--no-index", action="store_true", help="Qdrant/Neo4j 지식 색인 건너뜀")
     parser.add_argument("--no-translate", action="store_true", help="제목 한국어 번역 건너뜀")
     parser.add_argument("--group-by", choices=["category", "source"], default=None,
                         help="브리핑 묶음 기준 (기본: 설정 또는 category)")
@@ -184,6 +204,13 @@ def main() -> int:
             print(f"[archive] 저장: {path}")
         except Exception as e:  # noqa: BLE001
             print(f"[archive] 실패: {e}", file=sys.stderr)
+
+    # 지식 계층 색인 (선택): Qdrant/Neo4j가 설정돼 있으면 신규 항목을 적재
+    if not args.no_index and (cfg.qdrant_url or cfg.neo4j_uri):
+        try:
+            _index_knowledge(cfg, display_items)
+        except Exception as e:  # noqa: BLE001
+            print(f"[knowledge] 색인 실패: {e}", file=sys.stderr)
 
     sent = False
     if cfg.slack_webhook:
