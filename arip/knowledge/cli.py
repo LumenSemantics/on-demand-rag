@@ -1,0 +1,96 @@
+from __future__ import annotations
+
+import argparse
+import sys
+
+from ..config import Config, load_config
+from ..main import _force_utf8_stdout, collect_all
+from . import embed, graph, store
+
+
+def _cmd_check(cfg: Config) -> int:
+    """임베딩·Qdrant·Neo4j 연결을 각각 점검."""
+    ok = True
+    try:
+        v = embed.embed_texts(["연결 테스트"], cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)
+        print(f"[embed]  OK  ({cfg.embed_provider}, dim {len(v[0])})")
+    except Exception as e:  # noqa: BLE001
+        print(f"[embed]  실패: {e}", file=sys.stderr)
+        ok = False
+    try:
+        store.get_client(cfg.qdrant_url, cfg.qdrant_api_key).get_collections()
+        print("[qdrant] OK")
+    except Exception as e:  # noqa: BLE001
+        print(f"[qdrant] 실패: {e}", file=sys.stderr)
+        ok = False
+    try:
+        drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+        drv.verify_connectivity()
+        drv.close()
+        print("[neo4j]  OK")
+    except Exception as e:  # noqa: BLE001
+        print(f"[neo4j]  실패: {e}", file=sys.stderr)
+        ok = False
+    print("모두 정상 ✅" if ok else "일부 실패 — 위 로그 확인")
+    return 0 if ok else 1
+
+
+def _cmd_index(cfg: Config, limit: int) -> int:
+    """수집한 항목을 임베딩해 Qdrant + Neo4j에 색인(멱등)."""
+    items, _ = collect_all(cfg)
+    if limit > 0:
+        items = items[:limit]
+    if not items:
+        print("수집 항목 없음")
+        return 0
+    texts = [f"{it.title}\n{it.abstract}".strip() for it in items]
+    vecs = embed.embed_texts(texts, cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)
+
+    qc = store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+    store.ensure_collection(qc, len(vecs[0]))
+    print(f"[qdrant] {store.index(qc, items, vecs)}건 색인")
+
+    drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+    graph.ensure_constraints(drv)
+    print(f"[neo4j]  {graph.index(drv, items)}건 색인")
+    drv.close()
+    return 0
+
+
+def _cmd_search(cfg: Config, query: str, limit: int) -> int:
+    """벡터 유사도 검색."""
+    qv = embed.embed_texts([query], cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)[0]
+    qc = store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+    print(f"질의: {query}")
+    for h in store.search(qc, qv, limit=limit):
+        p = h.payload or {}
+        title = p.get("title_ko") or p.get("title", "")
+        print(f"  {h.score:.3f}  {title}")
+        print(f"         {p.get('url', '')}")
+    return 0
+
+
+def main() -> int:
+    _force_utf8_stdout()
+    parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("check", help="임베딩·Qdrant·Neo4j 연결 점검")
+    pi = sub.add_parser("index", help="수집 항목을 벡터/그래프에 색인")
+    pi.add_argument("--limit", type=int, default=0, help="색인할 최대 건수(0=전체)")
+    ps = sub.add_parser("search", help="벡터 유사도 검색")
+    ps.add_argument("query")
+    ps.add_argument("--limit", type=int, default=5)
+    args = parser.parse_args()
+
+    cfg = load_config()
+    if args.cmd == "check":
+        return _cmd_check(cfg)
+    if args.cmd == "index":
+        return _cmd_index(cfg, args.limit)
+    if args.cmd == "search":
+        return _cmd_search(cfg, args.query, args.limit)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

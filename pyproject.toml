@@ -13,9 +13,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
+# Stage 2 — 지식 계층 (Qdrant Cloud + Neo4j Aura). 필요할 때만 설치:
+#   uv sync --extra knowledge
+knowledge = ["qdrant-client>=1.12", "neo4j>=5.14"]
 
 [project.scripts]
 arip = "arip.main:main"
+arip-kb = "arip.knowledge.cli:main"
 
 [build-system]
 requires = ["hatchling"]

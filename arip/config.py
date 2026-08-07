@@ -35,6 +35,14 @@ class Config:
     kakao_rest_api_key: str
     kakao_refresh_token: str
     report_base_url: str
+    # Stage 2 — 지식 계층 (클라우드)
+    qdrant_url: str
+    qdrant_api_key: str
+    neo4j_uri: str
+    neo4j_user: str
+    neo4j_password: str
+    embed_provider: str
+    embed_model: str
 
 
 def load_config(sources_file: str = "config/sources.yaml") -> Config:
@@ -59,4 +67,11 @@ def load_config(sources_file: str = "config/sources.yaml") -> Config:
         kakao_rest_api_key=os.getenv("KAKAO_REST_API_KEY", "").strip(),
         kakao_refresh_token=os.getenv("KAKAO_REFRESH_TOKEN", "").strip(),
         report_base_url=os.getenv("REPORT_BASE_URL", "").strip().rstrip("/"),
+        qdrant_url=os.getenv("QDRANT_URL", "").strip().rstrip("/"),
+        qdrant_api_key=os.getenv("QDRANT_API_KEY", "").strip(),
+        neo4j_uri=os.getenv("NEO4J_URI", "").strip(),
+        neo4j_user=os.getenv("NEO4J_USER", "neo4j").strip(),
+        neo4j_password=os.getenv("NEO4J_PASSWORD", "").strip(),
+        embed_provider=os.getenv("EMBED_PROVIDER", "gemini").strip().lower(),
+        embed_model=os.getenv("EMBED_MODEL", "text-embedding-004").strip(),
     )
