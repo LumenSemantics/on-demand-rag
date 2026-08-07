@@ -24,6 +24,8 @@ AI 연구 동향(논문·모델·블로그·정책)을 자동 수집하고, 지�
 
 📚 문서: **[프로젝트 개요](Docs/ARIP%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%20%EA%B0%9C%EC%9A%94.md)** (비전·아키텍처·소스·스택·로드맵) · [Stage 1 스펙](Docs/Stage1%20MVP%20-%20Crawl%20and%20Notify.md) · [ERD](Docs/ERD.md) · [문서 색인](Docs)
 
+🏛️ 설계·기록: **[아키텍처 & 데이터 흐름](Docs/AIRP-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md)** ([PDF](Docs/AIRP-%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.pdf)) · **[시행착오 · 트러블슈팅](Docs/%EC%8B%9C%ED%96%89%EC%B0%A9%EC%98%A4-%ED%8A%B8%EB%9F%AC%EB%B8%94%EC%8A%88%ED%8C%85.md)**
+
 ---
 
 ## Stage 1 — Crawl & Notify
