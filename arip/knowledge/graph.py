@@ -94,3 +94,27 @@ def by_author(driver: Driver, doc_id: str, limit: int = 8) -> list[dict]:
     """같은 저자의 다른 문서."""
     with driver.session() as session:
         return [dict(r) for r in session.run(_BY_AUTHOR, id=doc_id, limit=limit)]
+
+
+_NEIGHBORHOOD = f"""
+MATCH (d:Document {{id: $id}})
+OPTIONAL MATCH (d)-[:HAS_CATEGORY]->(c:Category)
+OPTIONAL MATCH (d)<-[:AUTHORED]-(a:Author)
+WITH d, collect(DISTINCT c.label) AS cats, collect(DISTINCT a.name)[..5] AS authors
+OPTIONAL MATCH (d)-[:HAS_CATEGORY|AUTHORED]-()-[:HAS_CATEGORY|AUTHORED]-(o:Document)
+WHERE o.id <> d.id
+WITH d, cats, authors,
+     collect(DISTINCT {{id: o.id, title: {_TITLE}}})[..6] AS related
+RETURN (CASE WHEN d.title_ko <> '' THEN d.title_ko ELSE d.title END) AS title,
+       cats, authors, related
+"""
+
+
+def neighborhood(driver: Driver, doc_id: str) -> dict | None:
+    """문서의 이웃(카테고리·저자·관련문서)을 그래프 시각화용으로 조회."""
+    with driver.session() as session:
+        r = session.run(_NEIGHBORHOOD, id=doc_id).single()
+        if not r:
+            return None
+        return {"title": r["title"], "categories": [c for c in r["cats"] if c],
+                "authors": r["authors"], "related": r["related"]}

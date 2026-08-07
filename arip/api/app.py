@@ -37,6 +37,37 @@ def api_search(q: str, limit: int = 8) -> dict:
     return {"query": q, "results": results, "related": related}
 
 
+@app.get("/api/graph")
+def api_graph(q: str) -> dict:
+    """상위 문서의 이웃(카테고리·저자·관련문서)을 노드/엣지로 반환."""
+    qv = embed.embed_texts([q], _cfg.embed_provider, _cfg.llm_api_key, _cfg.embed_model)[0]
+    qc = store.get_client(_cfg.qdrant_url, _cfg.qdrant_api_key)
+    hits = store.search(qc, qv, limit=1)
+    if not hits or not _cfg.neo4j_uri:
+        return {"nodes": [], "edges": []}
+    doc_id = (hits[0].payload or {}).get("doc_id", "")
+    drv = graph.get_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
+    try:
+        nb = graph.neighborhood(drv, doc_id)
+    finally:
+        drv.close()
+    if not nb:
+        return {"nodes": [], "edges": []}
+    nodes = [{"id": "doc", "label": (nb["title"] or "")[:40], "group": "doc"}]
+    edges = []
+    for c in nb["categories"]:
+        nodes.append({"id": f"cat:{c}", "label": c, "group": "category"})
+        edges.append({"from": "doc", "to": f"cat:{c}"})
+    for a in nb["authors"]:
+        nodes.append({"id": f"au:{a}", "label": a, "group": "author"})
+        edges.append({"from": f"au:{a}", "to": "doc"})
+    for o in nb["related"]:
+        nid = f"rel:{o['id']}"
+        nodes.append({"id": nid, "label": (o["title"] or "")[:38], "group": "related"})
+        edges.append({"from": "doc", "to": nid, "dashes": True})
+    return {"nodes": nodes, "edges": edges}
+
+
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return _PAGE
@@ -76,6 +107,9 @@ _PAGE = """<!doctype html>
   </div>
   <div id="results"></div>
   <div id="related"></div>
+  <h2 id="ghdr" style="display:none">🌐 지식 그래프 (문서·카테고리·저자·관련문서)</h2>
+  <div id="graph" style="height:440px;border:1px solid #8883;border-radius:10px"></div>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 function item(r, extra="") {
@@ -94,7 +128,24 @@ async function run() {
     if (d.related && d.related.length)
       $("#related").innerHTML = "<h2>🕸️ 상위 문서와 관련 (카테고리·저자 공유)</h2>" +
         d.related.map(r => item(r, `<span class="score">공유 ${r.shared}</span>`)).join("");
+    graph(q);
   } catch (e) { $("#results").innerHTML = "<p class='empty'>오류: " + e + "</p>"; }
+}
+async function graph(q) {
+  try {
+    const d = await (await fetch("/api/graph?q=" + encodeURIComponent(q))).json();
+    $("#ghdr").style.display = d.nodes.length ? "block" : "none";
+    if (!d.nodes.length) return;
+    const groups = {
+      doc: { color: "#4f46e5", shape: "box", font: { color: "#fff" } },
+      category: { color: "#10b981" }, author: { color: "#f59e0b" }, related: { color: "#8b5cf6" }
+    };
+    new vis.Network($("#graph"),
+      { nodes: new vis.DataSet(d.nodes), edges: new vis.DataSet(d.edges) },
+      { groups, nodes: { shape: "dot", size: 14, font: { size: 12 } },
+        edges: { color: "#8886", smooth: false }, physics: { stabilization: true },
+        interaction: { hover: true } });
+  } catch (e) { /* 그래프 실패는 무시 */ }
 }
 $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
 </script>
