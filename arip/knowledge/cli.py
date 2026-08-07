@@ -70,6 +70,28 @@ def _cmd_search(cfg: Config, query: str, limit: int) -> int:
     return 0
 
 
+def _cmd_related(cfg: Config, query: str, limit: int) -> int:
+    """쿼리로 기준 문서를 벡터 검색한 뒤, 그래프상 관련 문서를 보여준다(GraphRAG)."""
+    qv = embed.embed_texts([query], cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)[0]
+    qc = store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+    hits = store.search(qc, qv, limit=1)
+    if not hits:
+        print("검색 결과 없음")
+        return 0
+    p = hits[0].payload or {}
+    print(f"기준 문서: {p.get('title_ko') or p.get('title', '')}")
+    print(f"           {p.get('url', '')}  [{p.get('category', '')}]")
+
+    drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+    rel = graph.related_docs(drv, p.get("doc_id", ""), limit=limit)
+    drv.close()
+    print(f"\n── 그래프상 관련 문서 {len(rel)}건 (카테고리·저자 공유) ──")
+    for r in rel:
+        print(f"  (공유 {r['shared']})  {r['title']}")
+        print(f"             {r['url']}")
+    return 0
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
@@ -80,6 +102,9 @@ def main() -> int:
     ps = sub.add_parser("search", help="벡터 유사도 검색")
     ps.add_argument("query")
     ps.add_argument("--limit", type=int, default=5)
+    pr = sub.add_parser("related", help="벡터 검색 + 그래프 관련 문서(GraphRAG)")
+    pr.add_argument("query")
+    pr.add_argument("--limit", type=int, default=6)
     args = parser.parse_args()
 
     cfg = load_config()
@@ -89,6 +114,8 @@ def main() -> int:
         return _cmd_index(cfg, args.limit)
     if args.cmd == "search":
         return _cmd_search(cfg, args.query, args.limit)
+    if args.cmd == "related":
+        return _cmd_related(cfg, args.query, args.limit)
     return 1
 
 

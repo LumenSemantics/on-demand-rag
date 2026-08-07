@@ -61,3 +61,36 @@ def index(driver: Driver, items: Sequence[Item]) -> int:
             )
             n += 1
     return n
+
+
+# 같은 카테고리 또는 같은 저자를 공유하는 다른 문서를, 공유 수가 많은 순으로.
+# title_ko는 번역 안 된 문서에서 ""(빈 문자열)이라 coalesce가 안 먹혀 CASE로 처리.
+_TITLE = "CASE WHEN o.title_ko <> '' THEN o.title_ko ELSE o.title END"
+
+_RELATED = f"""
+MATCH (d:Document {{id: $id}})-[:HAS_CATEGORY|AUTHORED]-(x)-[:HAS_CATEGORY|AUTHORED]-(o:Document)
+WHERE o.id <> d.id
+RETURN o.id AS id, {_TITLE} AS title, o.url AS url, count(DISTINCT x) AS shared
+ORDER BY shared DESC
+LIMIT $limit
+"""
+
+_BY_AUTHOR = f"""
+MATCH (d:Document {{id: $id}})<-[:AUTHORED]-(a:Author)-[:AUTHORED]->(o:Document)
+WHERE o.id <> d.id
+RETURN DISTINCT o.id AS id, {_TITLE} AS title, o.url AS url,
+       collect(DISTINCT a.name)[0] AS author
+LIMIT $limit
+"""
+
+
+def related_docs(driver: Driver, doc_id: str, limit: int = 8) -> list[dict]:
+    """카테고리/저자를 공유하는 관련 문서(공유 수 내림차순)."""
+    with driver.session() as session:
+        return [dict(r) for r in session.run(_RELATED, id=doc_id, limit=limit)]
+
+
+def by_author(driver: Driver, doc_id: str, limit: int = 8) -> list[dict]:
+    """같은 저자의 다른 문서."""
+    with driver.session() as session:
+        return [dict(r) for r in session.run(_BY_AUTHOR, id=doc_id, limit=limit)]
