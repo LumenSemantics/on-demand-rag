@@ -92,6 +92,25 @@ def _cmd_related(cfg: Config, query: str, limit: int) -> int:
     return 0
 
 
+def _cmd_trends(cfg: Config, days: int) -> int:
+    """발행일 기준 카테고리 급증 + 상위 키워드."""
+    from . import trends as kb_trends
+
+    drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+    docs = kb_trends.fetch_docs(drv)
+    drv.close()
+    print(f"분석 문서 {len(docs)}건 (최근 {days}일 vs 이전 {days}일)")
+    print("── 📈 카테고리 트렌드 ──")
+    for r in kb_trends.category_trends(docs, days)[:10]:
+        s = "∞" if r["surge"] == float("inf") else f"{r['surge']:.1f}x"
+        arrow = "🔺" if r["surge"] > 1.2 else ("🔻" if r["surge"] < 0.8 and r["prior"] else "  ")
+        print(f"  {arrow} {r['category']:18} 최근 {r['recent']:3} / 이전 {r['prior']:3}  (급증 {s})")
+    terms = kb_trends.top_terms(docs, days)
+    print("── 🔑 상위 키워드(최근) ──")
+    print("  " + ", ".join(f"{w}({n})" for w, n in terms))
+    return 0
+
+
 def main() -> int:
     _force_utf8_stdout()
     parser = argparse.ArgumentParser(prog="arip-kb", description="ARIP Stage 2 — 지식 계층(벡터/그래프)")
@@ -105,6 +124,8 @@ def main() -> int:
     pr = sub.add_parser("related", help="벡터 검색 + 그래프 관련 문서(GraphRAG)")
     pr.add_argument("query")
     pr.add_argument("--limit", type=int, default=6)
+    pt = sub.add_parser("trends", help="카테고리 급증 + 상위 키워드")
+    pt.add_argument("--days", type=int, default=7)
     args = parser.parse_args()
 
     cfg = load_config()
@@ -116,6 +137,8 @@ def main() -> int:
         return _cmd_search(cfg, args.query, args.limit)
     if args.cmd == "related":
         return _cmd_related(cfg, args.query, args.limit)
+    if args.cmd == "trends":
+        return _cmd_trends(cfg, args.days)
     return 1
 
 
