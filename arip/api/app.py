@@ -82,6 +82,30 @@ def api_ask(q: str) -> dict:
     }
 
 
+@app.get("/api/trends")
+def api_trends(days: int = 7) -> dict:
+    """카테고리 급증 + 상위 키워드."""
+    from ..knowledge import trends as kb_trends
+
+    if not _cfg.neo4j_uri:
+        return {"categories": [], "terms": []}
+    drv = graph.get_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
+    try:
+        docs = kb_trends.fetch_docs(drv)
+    finally:
+        drv.close()
+    cats = [
+        {
+            "category": r["category"], "recent": r["recent"], "prior": r["prior"],
+            "surge": "∞" if r["surge"] == float("inf") else round(r["surge"], 1),
+            "hot": r["surge"] >= 3 and r["recent"] >= 3,
+        }
+        for r in kb_trends.category_trends(docs, days=days)[:10]
+    ]
+    terms = [{"term": w, "count": n} for w, n in kb_trends.top_terms(docs, days=days, n=20)]
+    return {"categories": cats, "terms": terms}
+
+
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return _PAGE
@@ -112,6 +136,7 @@ _PAGE = """<!doctype html>
   .score { font-variant-numeric: tabular-nums; }
   .empty { opacity: .6; }
   .ask { background: #059669; }
+  .trend { background: #d97706; }
   .qtag { margin: 10px 0; display: flex; gap: 6px; flex-wrap: wrap; }
   .atext { white-space: pre-wrap; padding: 14px; border: 1px solid #8883; border-radius: 8px;
            background: #05966910; margin: 8px 0; }
@@ -123,6 +148,7 @@ _PAGE = """<!doctype html>
     <input id="q" placeholder="예: 효율적인 대형 언어모델 추론" autofocus>
     <button onclick="run()">검색</button>
     <button class="ask" onclick="ask()">AI 질문</button>
+    <button class="trend" onclick="trends()">트렌드</button>
   </div>
   <div id="answer"></div>
   <div id="results"></div>
@@ -184,6 +210,23 @@ async function ask() {
     $("#answer").innerHTML =
       `<div class="qtag">🧭 ${qtag}</div><div class="atext"></div><h2>📚 근거</h2>${srcs}`;
     $("#answer .atext").textContent = d.answer || "(답변 없음)";
+  } catch (e) { $("#answer").innerHTML = "<p class='empty'>오류: " + e + "</p>"; }
+}
+async function trends() {
+  $("#results").innerHTML = ""; $("#related").innerHTML = ""; $("#ghdr").style.display = "none"; $("#graph").innerHTML = "";
+  $("#answer").innerHTML = "<p class='empty'>📈 트렌드 계산 중…</p>";
+  try {
+    const d = await (await fetch("/api/trends?days=7")).json();
+    if (!d.categories.length) { $("#answer").innerHTML = "<p class='empty'>데이터 없음</p>"; return; }
+    let html = "<h2>📈 카테고리 트렌드 (최근 7일)</h2>";
+    html += d.categories.map(c => {
+      const s = c.surge === "∞" ? "∞" : c.surge + "x";
+      return `<div class="item">${c.hot ? "🚨 " : ""}<b>${c.category}</b>
+        <div class="meta"><span>최근 ${c.recent} / 이전 ${c.prior}</span><span class="badge">급증 ${s}</span></div></div>`;
+    }).join("");
+    html += "<h2>🔑 키워드</h2><div class='qtag'>" +
+      d.terms.map(t => `<span class="badge">${t.term} ${t.count}</span>`).join(" ") + "</div>";
+    $("#answer").innerHTML = html;
   } catch (e) { $("#answer").innerHTML = "<p class='empty'>오류: " + e + "</p>"; }
 }
 $("#q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
