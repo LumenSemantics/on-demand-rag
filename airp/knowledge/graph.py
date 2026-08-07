@@ -36,6 +36,32 @@ def get_driver(uri: str, user: str, password: str) -> Driver:
     return GraphDatabase.driver(uri, auth=(user, password))
 
 
+_SHARED_DRIVERS: dict[tuple[str, str, str], Driver] = {}
+
+
+def shared_driver(uri: str, user: str, password: str) -> Driver:
+    """수명이 긴 프로세스(웹 서버)용 재사용 드라이버. 인자별로 1개만 생성한다.
+
+    드라이버는 스레드 안전하며 장기 재사용이 권장된다. 세션은 각 호출에서 생성한다.
+    """
+    key = (uri, user, password)
+    drv = _SHARED_DRIVERS.get(key)
+    if drv is None:
+        drv = get_driver(uri, user, password)
+        _SHARED_DRIVERS[key] = drv
+    return drv
+
+
+def close_shared() -> None:
+    """공유 드라이버를 모두 닫는다(앱 종료 시)."""
+    for drv in _SHARED_DRIVERS.values():
+        try:
+            drv.close()
+        except Exception:  # noqa: BLE001
+            pass
+    _SHARED_DRIVERS.clear()
+
+
 def ensure_constraints(driver: Driver) -> None:
     with driver.session() as session:
         session.run("CREATE CONSTRAINT doc_id IF NOT EXISTS FOR (d:Document) REQUIRE d.id IS UNIQUE")

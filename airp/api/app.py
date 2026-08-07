@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import lru_cache
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
@@ -8,6 +10,17 @@ from ..knowledge import embed, graph, store
 
 app = FastAPI(title="AIRP GraphRAG")
 _cfg = load_config()
+
+
+@lru_cache(maxsize=256)
+def _embed_query(q: str) -> tuple[float, ...]:
+    """질의 임베딩 캐시. 웹 UI는 같은 질의로 검색+그래프를 잇달아 호출하므로 중복 임베딩을 막는다."""
+    return tuple(embed.embed_texts([q], _cfg.embed_provider, _cfg.llm_api_key, _cfg.embed_model)[0])
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    graph.close_shared()
 
 
 @app.get("/healthz")
@@ -19,8 +32,8 @@ def healthz() -> dict:
 @app.get("/api/search")
 def api_search(q: str, limit: int = 8) -> dict:
     """벡터 유사도 검색 + 상위 문서의 그래프 관련 문서(GraphRAG)."""
-    qv = embed.embed_texts([q], _cfg.embed_provider, _cfg.llm_api_key, _cfg.embed_model)[0]
-    qc = store.get_client(_cfg.qdrant_url, _cfg.qdrant_api_key)
+    qv = list(_embed_query(q))
+    qc = store.shared_client(_cfg.qdrant_url, _cfg.qdrant_api_key)
     hits = store.search(qc, qv, limit=limit)
     results = [
         {
@@ -35,28 +48,22 @@ def api_search(q: str, limit: int = 8) -> dict:
     ]
     related: list[dict] = []
     if results and _cfg.neo4j_uri:
-        drv = graph.get_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
-        try:
-            related = graph.related_docs(drv, results[0]["doc_id"], limit=6)
-        finally:
-            drv.close()
+        drv = graph.shared_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
+        related = graph.related_docs(drv, results[0]["doc_id"], limit=6)
     return {"query": q, "results": results, "related": related}
 
 
 @app.get("/api/graph")
 def api_graph(q: str) -> dict:
     """상위 문서의 이웃(카테고리·저자·관련문서)을 노드/엣지로 반환."""
-    qv = embed.embed_texts([q], _cfg.embed_provider, _cfg.llm_api_key, _cfg.embed_model)[0]
-    qc = store.get_client(_cfg.qdrant_url, _cfg.qdrant_api_key)
+    qv = list(_embed_query(q))
+    qc = store.shared_client(_cfg.qdrant_url, _cfg.qdrant_api_key)
     hits = store.search(qc, qv, limit=1)
     if not hits or not _cfg.neo4j_uri:
         return {"nodes": [], "edges": []}
     doc_id = (hits[0].payload or {}).get("doc_id", "")
-    drv = graph.get_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
-    try:
-        nb = graph.neighborhood(drv, doc_id)
-    finally:
-        drv.close()
+    drv = graph.shared_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
+    nb = graph.neighborhood(drv, doc_id)
     if not nb:
         return {"nodes": [], "edges": []}
     nodes = [{"id": "doc", "label": (nb["title"] or "")[:40], "group": "doc"}]
@@ -95,11 +102,8 @@ def api_trends(days: int = 7) -> dict:
 
     if not _cfg.neo4j_uri:
         return {"categories": [], "terms": []}
-    drv = graph.get_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
-    try:
-        docs = kb_trends.fetch_docs(drv)
-    finally:
-        drv.close()
+    drv = graph.shared_driver(_cfg.neo4j_uri, _cfg.neo4j_user, _cfg.neo4j_password)
+    docs = kb_trends.fetch_docs(drv)
     cats = [
         {
             "category": r["category"], "recent": r["recent"], "prior": r["prior"],

@@ -32,7 +32,7 @@ def build_agent(cfg: Config):
         return {"queries": queries or [state["question"]]}
 
     def retrieve(state: State) -> dict:
-        qc = store.get_client(cfg.qdrant_url, cfg.qdrant_api_key)
+        qc = store.shared_client(cfg.qdrant_url, cfg.qdrant_api_key)
         seen: dict = {}
         for q in state["queries"]:
             qv = embed.embed_texts([q], cfg.embed_provider, cfg.llm_api_key, cfg.embed_model)[0]
@@ -52,11 +52,8 @@ def build_agent(cfg: Config):
     def expand(state: State) -> dict:
         related: list = []
         if state["docs"] and cfg.neo4j_uri:
-            drv = graph.get_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
-            try:
-                related = graph.related_docs(drv, state["docs"][0]["doc_id"], limit=4)
-            finally:
-                drv.close()
+            drv = graph.shared_driver(cfg.neo4j_uri, cfg.neo4j_user, cfg.neo4j_password)
+            related = graph.related_docs(drv, state["docs"][0]["doc_id"], limit=4)
         return {"related": related}
 
     def generate(state: State) -> dict:
@@ -88,6 +85,12 @@ def build_agent(cfg: Config):
     return g.compile()
 
 
+_COMPILED = None
+
+
 def ask(cfg: Config, question: str) -> State:
-    app = build_agent(cfg)
-    return app.invoke({"question": question, "queries": [], "docs": [], "related": [], "answer": ""})
+    # 컴파일된 그래프를 프로세스 단위로 1회만 만들어 재사용(웹 서버 요청마다 재컴파일 방지).
+    global _COMPILED
+    if _COMPILED is None:
+        _COMPILED = build_agent(cfg)
+    return _COMPILED.invoke({"question": question, "queries": [], "docs": [], "related": [], "answer": ""})

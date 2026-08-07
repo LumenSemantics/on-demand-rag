@@ -18,6 +18,19 @@ def get_client(url: str, api_key: str) -> QdrantClient:
     return QdrantClient(url=url, api_key=api_key or None)
 
 
+_SHARED_CLIENTS: dict[tuple[str, str], QdrantClient] = {}
+
+
+def shared_client(url: str, api_key: str) -> QdrantClient:
+    """수명이 긴 프로세스(웹 서버)용 재사용 클라이언트. 인자별로 1개만 생성한다."""
+    key = (url, api_key)
+    qc = _SHARED_CLIENTS.get(key)
+    if qc is None:
+        qc = get_client(url, api_key)
+        _SHARED_CLIENTS[key] = qc
+    return qc
+
+
 def ensure_collection(qc: QdrantClient, dim: int) -> None:
     """컬렉션이 없으면 생성(코사인 거리)."""
     if not qc.collection_exists(COLLECTION):
