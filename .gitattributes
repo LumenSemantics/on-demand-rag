@@ -1,0 +1,3 @@
+# 셸 스크립트/Dockerfile은 리눅스(Cloud Build/Cloud Shell)에서 실행되므로 LF 고정
+*.sh        text eol=lf
+Dockerfile  text eol=lf
