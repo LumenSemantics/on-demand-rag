@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import httpx
-
+from ..util import http_get
 from .base import Item
 
 HF_API = "https://huggingface.co/api/daily_papers"
@@ -9,8 +8,7 @@ HF_API = "https://huggingface.co/api/daily_papers"
 
 def collect(limit: int = 30) -> list[Item]:
     """HuggingFace Daily Papers(오늘의 인기 논문)를 가져온다."""
-    resp = httpx.get(HF_API, timeout=30.0, follow_redirects=True)
-    resp.raise_for_status()
+    resp = http_get(HF_API, timeout=30.0, follow_redirects=True)
     data = resp.json()
 
     items: list[Item] = []

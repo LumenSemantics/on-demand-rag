@@ -64,6 +64,44 @@ def test_kakao_template_truncates_and_has_link():
     assert build_template("hi")["link"]["web_url"].startswith("http")
 
 
+def test_slack_split_message():
+    from arip.notify.slack import split_message
+
+    # 한도 이하면 그대로 1개
+    assert split_message("짧은 메시지", limit=100) == ["짧은 메시지"]
+    # 여러 줄이 한도를 넘으면 줄 경계로 분할, 각 조각 한도 이하
+    text = "\n".join(f"line {i} " + "x" * 20 for i in range(20))
+    chunks = split_message(text, limit=60)
+    assert len(chunks) > 1
+    assert all(len(c) <= 60 for c in chunks)
+    # 원본 줄이 보존됨(합치면 동일)
+    assert "\n".join(chunks) == text
+
+
+def test_http_get_retries_then_succeeds(monkeypatch):
+    import httpx
+
+    from arip import util
+
+    calls = {"n": 0}
+
+    class _Resp:
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, **kwargs):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise httpx.ConnectError("boom")
+        return _Resp()
+
+    monkeypatch.setattr(util.httpx, "get", fake_get)
+    monkeypatch.setattr(util.time, "sleep", lambda s: None)  # 대기 스킵
+    resp = util.http_get("http://x", retries=3, backoff=0)
+    assert isinstance(resp, _Resp)
+    assert calls["n"] == 3  # 2번 실패 후 3번째 성공
+
+
 def test_parallel_map_order_and_empty():
     from arip.util import parallel_map
 

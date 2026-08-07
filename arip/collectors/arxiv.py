@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 
 import feedparser
-import httpx
 
+from ..util import http_get
 from .base import Item
 
 ARXIV_API = "https://export.arxiv.org/api/query"
@@ -23,9 +23,7 @@ def collect(categories: list[str], max_results: int = 30) -> list[Item]:
         "sortOrder": "descending",
         "max_results": str(max_results),
     }
-    resp = httpx.get(ARXIV_API, params=params, timeout=60.0, follow_redirects=True)
-    resp.raise_for_status()
-
+    resp = http_get(ARXIV_API, params=params, timeout=60.0, follow_redirects=True)
     feed = feedparser.parse(resp.text)
     items: list[Item] = []
     for e in feed.entries:
