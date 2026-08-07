@@ -34,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Sync dependencies
-        run: uv sync
+        run: uv sync --extra knowledge   # Qdrant/Neo4j 자동 색인용
 
       - name: Run brief
         env:
@@ -49,6 +49,12 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          # Stage 2 지식 색인 (시크릿 없으면 자동 스킵)
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USER: ${{ secrets.NEO4J_USER }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
         run: uv run arip
 
       # 생성된 reports/ 를 저장소에 커밋 → GitHub이 .md를 렌더링하는 무료 웹 아카이브

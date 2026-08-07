@@ -86,7 +86,23 @@ uv run arip-kb index --limit 30
 
 # 벡터 유사도 검색
 uv run arip-kb search "효율적인 MoE 대형 언어모델"
+
+# GraphRAG: 벡터 검색 + 그래프 관련 문서(카테고리·저자 공유)
+uv run arip-kb related "에이전트 강화학습"
 ```
+
+### 자동 색인 (데일리 브리핑)
+`arip` 실행 시 신규 항목이 **자동으로 Qdrant/Neo4j에 색인**됩니다(설정돼 있을 때만). 끄려면 `--no-index`.
+
+### GraphRAG 웹 UI
+```bash
+uv sync --extra api
+uv run arip-api        # → http://127.0.0.1:8000 (검색창 + 관련 문서 시각화)
+```
+
+### GitHub Actions 자동 색인
+매일 크론에서도 색인하려면 **Secrets**에 `QDRANT_URL`, `QDRANT_API_KEY`, `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` 추가.
+(워크플로는 `uv sync --extra knowledge`로 설치하고, 시크릿이 없으면 색인을 건너뜁니다.)
 
 ---
 
