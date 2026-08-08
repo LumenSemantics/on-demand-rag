@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime
 
 from . import archive, catalog, curate, translate
 from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
 from .notify import email as email_notify
-from .notify import kakao, slack
-from .report.builder import build_digest, build_report
+from .notify import slack  # kakao 발송 비활성화(주석 처리)
+from .report.builder import build_report  # build_digest는 kakao 발송 비활성화로 미사용
 from .store.dedup import SeenStore
 from .summarize import llm
 from .util import is_korean, parallel_map
@@ -273,16 +272,19 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001
             print(f"[email] 실패: {e}", file=sys.stderr)
 
-    # 카카오톡: 길이 제한 때문에 다이제스트 + 전체 보기 링크로 발송
-    if cfg.kakao_rest_api_key and cfg.kakao_refresh_token:
-        try:
-            digest = build_digest(display_items, group_by=group_by)
-            link = f"{cfg.report_base_url}/{datetime.now():%Y-%m-%d}.md" if cfg.report_base_url else ""
-            kakao.send(cfg.kakao_rest_api_key, cfg.kakao_refresh_token, digest, link)
-            print("[kakao] 발송 완료")
-            sent = True
-        except Exception as e:  # noqa: BLE001
-            print(f"[kakao] 실패: {e}", file=sys.stderr)
+    # 카카오톡 발송 비활성화(주석 처리). 다시 켜려면 아래 블록의 주석을 해제하고,
+    # 상단 임포트에 `from datetime import datetime`, `kakao`(from .notify),
+    # `build_digest`(from .report.builder)를 다시 추가하면 된다.
+    # # 카카오톡: 길이 제한 때문에 다이제스트 + 전체 보기 링크로 발송
+    # if cfg.kakao_rest_api_key and cfg.kakao_refresh_token:
+    #     try:
+    #         digest = build_digest(display_items, group_by=group_by)
+    #         link = f"{cfg.report_base_url}/{datetime.now():%Y-%m-%d}.md" if cfg.report_base_url else ""
+    #         kakao.send(cfg.kakao_rest_api_key, cfg.kakao_refresh_token, digest, link)
+    #         print("[kakao] 발송 완료")
+    #         sent = True
+    #     except Exception as e:  # noqa: BLE001
+    #         print(f"[kakao] 실패: {e}", file=sys.stderr)
 
     if not sent:
         print("발송 대상 미설정(SLACK_WEBHOOK_URL 등) — 콘솔 출력:")
