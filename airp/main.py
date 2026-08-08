@@ -8,7 +8,7 @@ from .collectors import arxiv, huggingface, rss
 from .collectors.base import Item
 from .config import Config, load_config
 from .notify import email as email_notify
-from .notify import slack  # kakao 발송 비활성화(주석 처리)
+from .notify import slack, telegram  # kakao 발송 비활성화(주석 처리)
 from .report.builder import build_report  # build_digest는 kakao 발송 비활성화로 미사용
 from .store.dedup import SeenStore
 from .summarize import llm
@@ -271,6 +271,14 @@ def main() -> int:
             sent = True
         except Exception as e:  # noqa: BLE001
             print(f"[email] 실패: {e}", file=sys.stderr)
+
+    if cfg.telegram_bot_token and cfg.telegram_chat_id:
+        try:
+            telegram.send(cfg.telegram_bot_token, cfg.telegram_chat_id, report)
+            print("[telegram] 발송 완료")
+            sent = True
+        except Exception as e:  # noqa: BLE001
+            print(f"[telegram] 실패: {e}", file=sys.stderr)
 
     # 카카오톡 발송 비활성화(주석 처리). 다시 켜려면 아래 블록의 주석을 해제하고,
     # 상단 임포트에 `from datetime import datetime`, `kakao`(from .notify),

@@ -46,7 +46,7 @@ Scheduler → Collector(arXiv·HuggingFace·RSS) → Dedup(SQLite) → (요약) 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/)
 - (선택) 요약용 LLM API 키 1개 — 없으면 제목·링크만 알림(완전 무료)
-- (선택) Slack Incoming Webhook
+- (선택) 알림 채널: Slack Incoming Webhook · SMTP(Gmail 앱 비밀번호) · Telegram 봇
 
 ### 빠른 시작
 
@@ -169,7 +169,7 @@ airp/
 ├── summarize/llm.py   # (선택) 한 줄 요약 (openai/anthropic/gemini)
 ├── catalog.py         # 카탈로그 분류 (keyword / llm)
 ├── report/builder.py  # Markdown 리포트 · 다이제스트
-├── notify/            # slack, email, kakao
+├── notify/            # slack, email, telegram (kakao는 비활성화)
 ├── knowledge/         # Stage 2~3: embed · store(Qdrant) · graph(Neo4j)
 │                      #   · trends · agent(LangGraph) · cli(airp-kb)
 └── api/app.py         # Stage 2~3: FastAPI 웹 UI (airp-api)

@@ -88,6 +88,17 @@ def test_slack_split_message():
     assert "\n".join(chunks) == text
 
 
+def test_telegram_split_message():
+    from airp.notify.telegram import split_message
+
+    assert split_message("짧은 메시지", limit=100) == ["짧은 메시지"]
+    text = "\n".join(f"line {i} " + "x" * 20 for i in range(20))
+    chunks = split_message(text, limit=60)
+    assert len(chunks) > 1
+    assert all(len(c) <= 60 for c in chunks)
+    assert "\n".join(chunks) == text
+
+
 def test_http_get_retries_then_succeeds(monkeypatch):
     import httpx
 

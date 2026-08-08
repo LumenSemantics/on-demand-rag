@@ -34,6 +34,8 @@ class Config:
     archive_dir: str
     kakao_rest_api_key: str
     kakao_refresh_token: str
+    telegram_bot_token: str
+    telegram_chat_id: str
     report_base_url: str
     # Stage 2 — 지식 계층 (클라우드)
     qdrant_url: str
@@ -66,6 +68,8 @@ def load_config(sources_file: str = "config/sources.yaml") -> Config:
         archive_dir=os.getenv("ARCHIVE_DIR", "reports"),
         kakao_rest_api_key=os.getenv("KAKAO_REST_API_KEY", "").strip(),
         kakao_refresh_token=os.getenv("KAKAO_REFRESH_TOKEN", "").strip(),
+        telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
+        telegram_chat_id=os.getenv("TELEGRAM_CHAT_ID", "").strip(),
         report_base_url=os.getenv("REPORT_BASE_URL", "").strip().rstrip("/"),
         qdrant_url=os.getenv("QDRANT_URL", "").strip().rstrip("/"),
         qdrant_api_key=os.getenv("QDRANT_API_KEY", "").strip(),

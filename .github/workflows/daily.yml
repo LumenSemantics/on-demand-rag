@@ -42,6 +42,8 @@ jobs:
           LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           # 카카오톡 발송 비활성화(주석 처리). 다시 켜려면 아래 2줄 + main.py의 kakao 블록 주석 해제.
           # KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
           # KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
